@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "79175676104",
+    "firebase_url": "https://stockflow-19fb4-default-rtdb.firebaseio.com",
+    "project_id": "stockflow-19fb4",
+    "storage_bucket": "stockflow-19fb4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79175676104:android:d96ed135b264e9640335fd",
+        "android_client_info": {
+          "package_name": "com.example.stock_flow1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "79175676104-a2ooj8i3jevinv8grn8vbmrb3a8a531j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.stock_flow1",
+            "certificate_hash": "f14367e1260962987ce6198f610345e4c1c4fa2c"
+          }
+        },
+        {
+          "client_id": "79175676104-fupn1rkn34tu59ihp0krul7maimn26a1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKW9oRO1mCBEoZjIth5XZMybz0CxX7sCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "79175676104-fupn1rkn34tu59ihp0krul7maimn26a1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
