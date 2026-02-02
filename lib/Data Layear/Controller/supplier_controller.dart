@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:stock_flow/Data Layear/model/SupplierModel/supplier_model.dart';
-import 'package:stock_flow/Data Layear/servisess/supplier_service.dart';
+import '../model/SupplierModel/supplier_model.dart';
+import '../servisess/supplier_service.dart';
 
 class SupplierController extends GetxController {
   final SupplierService _supplierService = SupplierService();
-  final suppliers = <SupplierModel>[].obs;
+  final suppliers = <Supplier>[].obs;
   final isLoading = true.obs;
   final error = RxnString();
   StreamSubscription? _subscription;
@@ -36,12 +36,8 @@ class SupplierController extends GetxController {
 
   Future<String?> addSupplier(String name, String contact) async {
     try {
-      // The service adds the supplier to the database.
-      // We rely on the stream to update the UI, preventing duplicates.
-      final newId = await _supplierService.addSupplier({
-        'name': name,
-        'contact': contact,
-      });
+      final newSupplier = Supplier(name: name, contact: contact, totalPurchase: 0.0);
+      final newId = await _supplierService.addSupplier(newSupplier);
       return newId;
     } catch (e) {
       Get.snackbar(

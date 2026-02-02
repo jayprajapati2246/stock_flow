@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
-import 'package:stock_flow/Data Layear/model/PurchaseModel/purchase_model.dart';
-import 'package:stock_flow/Data Layear/servisess/purchase_service.dart';
-import 'package:stock_flow/Data Layear/servisess/supplier_service.dart'; // Import SupplierService
+import 'package:stock_flow/Data%20Layear/model/PurchaseModel/purchase_model.dart';
+import 'package:stock_flow/Data%20Layear/servisess/purchase_service.dart';
+import 'package:stock_flow/Data%20Layear/servisess/supplier_service.dart'; // Import SupplierService
 
 class PurchaseController extends GetxController {
   final PurchaseService _purchaseService = PurchaseService();
@@ -19,13 +19,13 @@ class PurchaseController extends GetxController {
       {required String supplierId, required double total}) async {
     try {
       // Add the purchase
-      await _purchaseService.addPurchase({
-        'supplierId': supplierId,
-        'total': total,
-        'paidAmount': 0.0, // Default to 0, can be updated later
-        'timestamp':
-            DateTime.now().millisecondsSinceEpoch, // RTDB-compatible timestamp
-      });
+      final newPurchase = PurchaseModel(
+        supplierId: supplierId,
+        total: total,
+        paidAmount: 0.0, // Default to 0, can be updated later
+        timestamp: DateTime.now(),
+      );
+      await _purchaseService.addPurchase(newPurchase);
 
       // Update the supplier's total purchase amount
       await _supplierService.updateSupplierTotalPurchase(supplierId, total);

@@ -1,25 +1,37 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class PurchaseModel {
-  final String id;
+  final String? id;
   final String supplierId;
   final double total;
   final double paidAmount;
-  final int timestamp;
+  final DateTime timestamp;
 
   PurchaseModel({
-    required this.id,
+    this.id,
     required this.supplierId,
     required this.total,
     this.paidAmount = 0.0,
     required this.timestamp,
   });
 
-  factory PurchaseModel.fromMap(String id, Map<String, dynamic> data) {
+  factory PurchaseModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return PurchaseModel(
-      id: id,
-      supplierId: data['supplierId'] as String? ?? '',
-      total: (data['total'] as num?)?.toDouble() ?? 0.0,
-      paidAmount: (data['paidAmount'] as num?)?.toDouble() ?? 0.0,
-      timestamp: data['timestamp'] as int? ?? 0,
+      id: doc.id,
+      supplierId: data['supplierId'] ?? '',
+      total: (data['total'] as num).toDouble(),
+      paidAmount: (data['paidAmount'] as num).toDouble(),
+      timestamp: (data['timestamp'] as Timestamp).toDate(),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'supplierId': supplierId,
+      'total': total,
+      'paidAmount': paidAmount,
+      'timestamp': Timestamp.fromDate(timestamp),
+    };
   }
 }

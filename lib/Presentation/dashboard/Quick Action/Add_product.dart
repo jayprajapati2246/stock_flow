@@ -1,65 +1,76 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
-import 'package:stock_flow/Data%20Layear/Controller/supplier_controller.dart';
-import 'package:stock_flow/Data%20Layear/model/SupplierModel/supplier_model.dart';
+import '../../../Data Layear/Controller/product_controller.dart';
+import '../../../Data Layear/Controller/supplier_controller.dart';
+import '../../../Data Layear/model/SupplierModel/supplier_model.dart';
 
-class AddProduct extends GetView<ProductController> {
+class AddProduct extends StatefulWidget {
   const AddProduct({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final SupplierController supplierController =
-    Get.put(SupplierController());
+  State<AddProduct> createState() => _AddProductState();
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
-        elevation: 0,
-        title: const Text(
-          "Add Product",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+class _AddProductState extends State<AddProduct> {
+  final ProductController controller = Get.find<ProductController>();
+  final SupplierController supplierController = Get.put(SupplierController());
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: WillPopScope(
+        onWillPop: () async => !controller.isLoading.value,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF1976D2),
+            elevation: 0,
+            title: const Text(
+              "Add Product",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildUploadSection(controller, context),
-              const SizedBox(height: 20),
-              _buildTextField("Product Name", controller.productNameController),
-              const SizedBox(height: 10),
-              _buildSupplierDropdown(supplierController, controller),
-              const SizedBox(height: 10),
-              _buildCategoryDropdown(controller),
-              const SizedBox(height: 10),
-              _buildTextField(
-                "Purchase Price",
-                controller.purchasePriceController,
-                keyboardType: TextInputType.number,
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildUploadSection(controller, context),
+                  const SizedBox(height: 20),
+                  _buildTextField("Product Name", controller.productNameController),
+                  const SizedBox(height: 10),
+                  _buildSupplierDropdown(supplierController, controller),
+                  const SizedBox(height: 10),
+                  _buildCategoryDropdown(controller),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    "Purchase Price",
+                    controller.purchasePriceController,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    "Selling Price",
+                    controller.priceController,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    "Stock Quantity",
+                    controller.quantityController,
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSaveButton(controller, context),
+                ],
               ),
-              const SizedBox(height: 10),
-              _buildTextField(
-                "Selling Price",
-                controller.priceController,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              _buildTextField(
-                "Stock Quantity",
-                controller.quantityController,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-              _buildSaveButton(controller, context),
-            ],
+            ),
           ),
         ),
       ),
@@ -68,10 +79,10 @@ class AddProduct extends GetView<ProductController> {
 
   // ---------------- TextField ----------------
   Widget _buildTextField(
-      String label,
-      TextEditingController controller, {
-        TextInputType? keyboardType,
-      }) {
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -85,7 +96,7 @@ class AddProduct extends GetView<ProductController> {
           labelText: label,
           border: InputBorder.none,
           contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
       ),
     );
@@ -93,9 +104,9 @@ class AddProduct extends GetView<ProductController> {
 
   // ---------------- Supplier Dropdown ----------------
   Widget _buildSupplierDropdown(
-      SupplierController supController,
-      ProductController prodController,
-      ) {
+    SupplierController supController,
+    ProductController prodController,
+  ) {
     return Obx(() {
       if (supController.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -116,8 +127,7 @@ class AddProduct extends GetView<ProductController> {
                   value: prodController.selectedSupplierId.value,
                   hint: const Text("Select Supplier"),
                   isExpanded: true,
-                  items:
-                  supController.suppliers.map((SupplierModel supplier) {
+                  items: supController.suppliers.map((Supplier supplier) {
                     return DropdownMenuItem<String>(
                       value: supplier.id,
                       child: Text(supplier.name),
@@ -173,8 +183,7 @@ class AddProduct extends GetView<ProductController> {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () =>
-                _showAddCategoryDialog(Get.context!, controller),
+            onPressed: () => _showAddCategoryDialog(Get.context!, controller),
           ),
         ],
       );
@@ -183,9 +192,9 @@ class AddProduct extends GetView<ProductController> {
 
   // ---------------- Upload Section ----------------
   Widget _buildUploadSection(
-      ProductController controller,
-      BuildContext context,
-      ) {
+    ProductController controller,
+    BuildContext context,
+  ) {
     return Obx(() {
       return GestureDetector(
         onTap: controller.isLoading.value
@@ -201,23 +210,23 @@ class AddProduct extends GetView<ProductController> {
           ),
           child: controller.selectedImage.value != null
               ? ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              controller.selectedImage.value!,
-              fit: BoxFit.cover,
-            ),
-          )
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(
+                    controller.selectedImage.value!,
+                    fit: BoxFit.cover,
+                  ),
+                )
               : Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-              SizedBox(height: 8),
-              Text(
-                "Tap to upload product image",
-                style: TextStyle(color: Colors.black54),
-              ),
-            ],
-          ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text(
+                      "Tap to upload product image",
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ],
+                ),
         ),
       );
     });
@@ -229,7 +238,7 @@ class AddProduct extends GetView<ProductController> {
       width: double.infinity,
       height: 48,
       child: Obx(
-            () => ElevatedButton(
+        () => ElevatedButton(
           onPressed: controller.isLoading.value
               ? null
               : () => controller.saveProduct(context),
@@ -242,13 +251,13 @@ class AddProduct extends GetView<ProductController> {
           child: controller.isLoading.value
               ? const CircularProgressIndicator(color: Colors.white)
               : const Text(
-            "Save Product",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+                  "Save Product",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );
@@ -256,10 +265,10 @@ class AddProduct extends GetView<ProductController> {
 
   // ---------------- Dialogs ----------------
   void _showAddSupplierDialog(
-      BuildContext context,
-      SupplierController supController,
-      ProductController prodController,
-      ) {
+    BuildContext context,
+    SupplierController supController,
+    ProductController prodController,
+  ) {
     final nameController = TextEditingController();
     final contactController = TextEditingController();
 
@@ -287,6 +296,9 @@ class AddProduct extends GetView<ProductController> {
               contactController.text.trim(),
             );
             if (id != null) {
+              // Refresh the supplier list to include the new one
+              supController.onInit();
+              // Set the new supplier as selected
               prodController.selectedSupplierId.value = id;
             }
             Get.back();
@@ -302,9 +314,9 @@ class AddProduct extends GetView<ProductController> {
   }
 
   void _showAddCategoryDialog(
-      BuildContext context,
-      ProductController controller,
-      ) {
+    BuildContext context,
+    ProductController controller,
+  ) {
     final categoryController = TextEditingController();
 
     Get.defaultDialog(

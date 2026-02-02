@@ -36,7 +36,7 @@ class _CommonDrawerState extends State<CommonDrawer> {
                 user?.displayName ?? "Stock Flow",
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              accountEmail: Text(user?.email ?? ""),
+              accountEmail: null,
             );
           }),
 

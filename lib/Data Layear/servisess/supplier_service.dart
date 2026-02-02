@@ -1,24 +1,53 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:get/get.dart';
 import 'package:stock_flow/Data%20Layear/Controller/auth_controller.dart';
-import 'package:stock_flow/Data%20Layear/model/SupplierModel/supplier_model.dart';
+import '../model/SupplierModel/supplier_model.dart';
 
 class SupplierService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
   final AuthController _authController = Get.find<AuthController>();
 
-  String _getSuppliersPath() {
-    final user = _authController.currentUser.value;
-    if (user == null) throw Exception('User not logged in');
-    return 'users/${user.uid}/suppliers';
-  }
-
   Stream<List<Supplier>> getSuppliers() {
-    return _firestore
-        .collection(_getSuppliersPath())
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Supplier.fromFirestore(doc)).toList());
+    final user = _authController.currentUser.value;
+    if (user == null) return Stream.value([]);
+
+    DatabaseReference ref = _database.ref('users/${user.uid}/suppliers');
+
+    return ref.onValue.map((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (data == null) {
+        return <Supplier>[];
+      }
+      final suppliers = <Supplier>[];
+      data.forEach((key, value) {
+        suppliers.add(Supplier.fromMap(Map<String, dynamic>.from(value as Map), key as String));
+      });
+      return suppliers;
+    });
   }
 
-  Future<void> addSupplier(Supplier supplier) {
-    return _firestore.collection(_getSuppliersPath()).add(supplier.toFirestore
+  Future<String?> addSupplier(Supplier supplier) async {
+    final user = _authController.currentUser.value;
+    if (user == null) return null;
+
+    DatabaseReference ref = _database.ref('users/${user.uid}/suppliers').push();
+    await ref.set(supplier.toMap());
+    return ref.key;
+  }
+
+  Future<void> removeSupplier(String supplierId) {
+    final user = _authController.currentUser.value;
+    if (user == null) return Future.value();
+
+    DatabaseReference ref = _database.ref('users/${user.uid}/suppliers/$supplierId');
+    return ref.remove();
+  }
+
+  Future<void> updateSupplierTotalPurchase(String supplierId, double total) {
+    final user = _authController.currentUser.value;
+    if (user == null) return Future.value();
+
+    DatabaseReference ref = _database.ref('users/${user.uid}/suppliers/$supplierId');
+    return ref.update({'totalPurchase': total});
+  }
+}

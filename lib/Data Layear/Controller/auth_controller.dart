@@ -9,15 +9,11 @@ class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  // --- IMPORTANT ---
-  // Replace this with the actual UID of your admin user in Firebase Authentication.
-  final String _adminUid = 'REPLACE_WITH_YOUR_ADMIN_UID';
-
   // --- Observables for Auth State and UI ---
   final Rx<User?> currentUser = Rx<User?>(null);
-  final RxBool isAdmin = false.obs;
   final RxBool isLoginLoading = false.obs;
   final RxBool isGoogleLoading = false.obs;
+  final RxBool isAdmin = false.obs;
 
   // --- Text Editing Controllers ---
   // For Login
@@ -35,7 +31,18 @@ class AuthController extends GetxController {
   void onReady() {
     super.onReady();
     currentUser.bindStream(_auth.authStateChanges());
-    ever(currentUser, _checkUserRole);
+    ever(currentUser, _handleAuthChanged);
+  }
+
+  void _handleAuthChanged(User? user) {
+    if (user != null) {
+      // This is a placeholder for checking admin status.
+      // You should replace this with your actual logic for determining if a user is an admin.
+      // For example, you might check a custom claim or a user role in your database.
+      isAdmin.value = true;
+    } else {
+      isAdmin.value = false;
+    }
   }
 
   @override
@@ -49,17 +56,6 @@ class AuthController extends GetxController {
     regEmailController.dispose();
     regPasswordController.dispose();
     super.onClose();
-  }
-
-  void _checkUserRole(User? user) {
-    if (user != null) {
-      isAdmin.value = user.uid == _adminUid;
-      print('AuthController: User authenticated with UID: ${user.uid}');
-      print('AuthController: Is Admin? ${isAdmin.value}');
-    } else {
-      isAdmin.value = false;
-      print('AuthController: User is not authenticated.');
-    }
   }
 
   Future<void> login() async {

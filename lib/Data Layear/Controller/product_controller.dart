@@ -1,9 +1,8 @@
 import 'dart:io';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';
-
 import 'package:stock_flow/Comon%20part%20for%20all/Scack%20bar/snackbar.dart';
 import 'package:stock_flow/Data%20Layear/Controller/purchase_controller.dart';
 import 'package:stock_flow/Data%20Layear/model/ProductModel/product_model.dart';
@@ -12,7 +11,13 @@ import 'package:stock_flow/Data%20Layear/servisess/database_product.dart';
 class ProductController extends GetxController {
   final ProductService _productService = ProductService();
 
-  // ---------------- Controllers ----------------
+  // Cloudinary config
+  final cloudinary = CloudinaryPublic(
+    "dtu8dmez4",
+    "Stock_Flow",
+    cache: false,
+  );
+
   final productNameController = TextEditingController();
   final skuController = TextEditingController();
   final priceController = TextEditingController();
@@ -39,31 +44,22 @@ class ProductController extends GetxController {
 
   var selectedCategory = RxnString();
   var selectedImage = Rxn<File>();
-
   final ImagePicker _picker = ImagePicker();
+
   final isLoading = false.obs;
   var allProducts = <ProductModel>[].obs;
 
-  // ---------------- Cloudinary ----------------
-  final CloudinaryPublic cloudinary = CloudinaryPublic(
-    'dtu8dmez4',
-    'Stock_Flow',
-    cache: false,
-  );
-
-  // ---------------- Init ----------------
-  @override
-  void onInit() {
-    super.onInit();
-    allProducts.bindStream(_productService.getProducts());
-  }
-
-  // ---------------- Stock Helpers ----------------
   int get lowStockCount =>
       allProducts.where((product) => product.quantity <= 10).length;
 
   List<ProductModel> get lowStockProducts =>
       allProducts.where((product) => product.quantity <= 10).toList();
+
+  @override
+  void onInit() {
+    super.onInit();
+    allProducts.bindStream(_productService.getProducts());
+  }
 
   void addCategory(String category) {
     if (category.isNotEmpty && !categories.contains(category)) {
@@ -72,30 +68,16 @@ class ProductController extends GetxController {
     }
   }
 
-  // ---------------- Image Picker ----------------
-  Future<void> pickImage(BuildContext context) async {
-    try {
-      final XFile? image =
-      await _picker.pickImage(source: ImageSource.gallery);
-
-      if (image != null) {
-        selectedImage.value = File(image.path);
-      }
-    } catch (e) {
-      CustomSnackBar.show(
-        context: context,
-        message: "Error picking image: $e",
-        type: SnackBarType.error,
-      );
-    }
+  Future<void> updateProductInDatabase(ProductModel product) async {
+    await _productService.updateProduct(product);
   }
 
-  // ---------------- Cloudinary Upload ----------------
-  Future<String?> _uploadImageToCloudinary(File imageFile) async {
+  Future<String?> upload(File file) async {
     try {
       final response = await cloudinary.uploadFile(
         CloudinaryFile.fromFile(
-          imageFile.path,
+          file.path,
+          folder: "Stock_Flow",
           resourceType: CloudinaryResourceType.Image,
         ),
       );
@@ -106,7 +88,22 @@ class ProductController extends GetxController {
     }
   }
 
-  // ---------------- Save Product ----------------
+  Future<void> pickImage(BuildContext context) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        selectedImage.value = File(image.path);
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+      CustomSnackBar.show(
+        context: context,
+        message: "Error picking image: $e",
+        type: SnackBarType.error,
+      );
+    }
+  }
+
   Future<void> saveProduct(BuildContext context) async {
     final name = productNameController.text.trim();
     final sku = skuController.text.trim();
@@ -131,22 +128,24 @@ class ProductController extends GetxController {
     }
 
     isLoading.value = true;
-
     try {
       String imageUrl = "";
-
-      // 🔥 Upload image first
       if (selectedImage.value != null) {
-        final uploadedUrl =
-        await _uploadImageToCloudinary(selectedImage.value!);
-
-        if (uploadedUrl == null) {
-          throw "Image upload failed";
+        final uploadedUrl = await upload(selectedImage.value!);
+        if (uploadedUrl != null) {
+          imageUrl = uploadedUrl;
+        } else {
+          CustomSnackBar.show(
+            context: context,
+            message: "Error uploading image. Please try again.",
+            type: SnackBarType.error,
+          );
+          isLoading.value = false;
+          return;
         }
-        imageUrl = uploadedUrl;
       }
 
-      // 🔥 Save product with Cloudinary URL
+      // 1. Save the product
       final product = ProductModel(
         name: name,
         sku: sku,
@@ -155,19 +154,15 @@ class ProductController extends GetxController {
         quantity: int.tryParse(qtyStr) ?? 0,
         category: category,
         supplierId: supplierId,
-        image: imageUrl, // ✅ Cloudinary URL
+        image: imageUrl,
       );
-
       await _productService.addProduct(product);
 
-      // 🔥 Purchase record
+      // 2. Create a corresponding purchase record
       final purchaseTotal =
-          (double.tryParse(purchasePriceStr) ?? 0.0) *
-              (int.tryParse(qtyStr) ?? 0);
+          (double.tryParse(purchasePriceStr) ?? 0.0) * (int.tryParse(qtyStr) ?? 0);
 
-      final PurchaseController purchaseController =
-      Get.put(PurchaseController());
-
+      final PurchaseController purchaseController = Get.put(PurchaseController());
       await purchaseController.addPurchase(
         supplierId: supplierId,
         total: purchaseTotal,
@@ -192,7 +187,6 @@ class ProductController extends GetxController {
     }
   }
 
-  // ---------------- Clear ----------------
   void _clearFields() {
     productNameController.clear();
     skuController.clear();
@@ -204,7 +198,6 @@ class ProductController extends GetxController {
     selectedImage.value = null;
   }
 
-  // ---------------- Delete ----------------
   Future<void> removeProduct(BuildContext context, String id) async {
     Get.defaultDialog(
       title: "Delete Product",
@@ -213,7 +206,7 @@ class ProductController extends GetxController {
       textConfirm: "Delete",
       confirmTextColor: Colors.white,
       onConfirm: () async {
-        Get.back();
+        Get.back(); // Close the dialog
         try {
           await _productService.deleteProduct(id);
           CustomSnackBar.show(
@@ -250,14 +243,6 @@ class ProductController extends GetxController {
         message: "Error removing all products: $e",
         type: SnackBarType.error,
       );
-    }
-  }
-
-  Future<void> updateProductInDatabase(ProductModel product) async {
-    try {
-      await _productService.updateProduct(product);
-    } catch (e) {
-      debugPrint("Error updating product: $e");
     }
   }
 }

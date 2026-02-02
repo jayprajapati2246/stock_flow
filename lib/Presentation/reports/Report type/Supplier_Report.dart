@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
-
-import 'package:stock_flow/Data Layear/Controller/product_controller.dart';
-import 'package:stock_flow/Data Layear/Controller/supplier_controller.dart';
-import 'package:stock_flow/Data Layear/model/ProductModel/product_model.dart';
-import 'package:stock_flow/Data Layear/model/SupplierModel/supplier_model.dart';
+import '../../../Data Layear/Controller/sales_controller.dart';
+import '../../../Data Layear/Controller/product_controller.dart';
+import '../../../Data Layear/Controller/supplier_controller.dart';
+import '../../../Data Layear/model/ProductModel/product_model.dart';
+import '../../../Data Layear/model/SupplierModel/supplier_model.dart';
 
 class SupplierReport extends StatefulWidget {
   const SupplierReport({super.key});
@@ -53,14 +52,12 @@ class _SupplierReportState extends State<SupplierReport> {
         } else if (_supplierController.suppliers.isEmpty) {
           return const Center(child: Text("No suppliers found."));
         } else {
-          // -------- DATA --------
           final suppliers = _supplierController.suppliers;
           final products = _productController.allProducts;
           final sales = _salesController.sales;
 
           final Map<String, _SupplierInfo> supplierInfoMap = {};
 
-          // -------- SUPPLIER + PRODUCTS --------
           for (var s in suppliers) {
             final supplierProducts =
                 products.where((p) => p.supplierId == s.id).toList();
@@ -80,7 +77,7 @@ class _SupplierReportState extends State<SupplierReport> {
                   totalEverPurchased * product.purchasePrice;
             }
 
-            supplierInfoMap[s.id] = _SupplierInfo(
+            supplierInfoMap[s.id!] = _SupplierInfo(
               supplier: s,
               products: supplierProducts,
               totalQuantity: totalCurrentStockQuantity,
@@ -140,9 +137,8 @@ class _SupplierReportState extends State<SupplierReport> {
     );
   }
 
-  // ================= ORIGINAL UI CARD =================
   Widget _buildSupplierCard(
-    SupplierModel supplier,
+    Supplier supplier,
     int totalQuantity,
     List<ProductModel> products,
     double totalPurchase,
@@ -194,7 +190,7 @@ class _SupplierReportState extends State<SupplierReport> {
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
-                        _showDeleteConfirmationDialog(context, supplier.id);
+                        _showDeleteConfirmationDialog(context, supplier.id!);
                       },
                     ),
                   ],
@@ -266,9 +262,8 @@ class _SupplierReportState extends State<SupplierReport> {
   }
 }
 
-// ================= HELPER =================
 class _SupplierInfo {
-  final SupplierModel supplier;
+  final Supplier supplier;
   final List<ProductModel> products;
   final int totalQuantity;
   final double totalPurchase;

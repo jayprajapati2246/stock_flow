@@ -12,46 +12,114 @@ class SettingsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        backgroundColor: const Color(0xFF1976D2),
+        elevation: 0,
+        title: const Text(
+          "Settings",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
       ),
-      body: ListView(
-        children: [
-          if (user != null)
-            UserAccountsDrawerHeader(
-              accountName: Text(user.displayName ?? 'User Name'),
-              accountEmail: Text(user.email ?? 'user.email@example.com'),
-              currentAccountPicture: CircleAvatar(
-                backgroundImage: user.photoURL != null
-                    ? NetworkImage(user.photoURL!)
-                    : const AssetImage('assates/image/images.png') as ImageProvider,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (user != null)
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundImage: user.photoURL != null
+                          ? NetworkImage(user.photoURL!)
+                          : const AssetImage('assates/image/images.png') as ImageProvider,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      user.displayName ?? 'User Name',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.email ?? 'user.email@example.com',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 24),
+            Text(
+              'User Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
               ),
             ),
-          if (user != null)
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Name'),
-              subtitle: Text(user.displayName ?? 'Not Provided'),
+            const Divider(height: 20, thickness: 1),
+             Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                children: [
+                   if (user != null)
+                    ListTile(
+                      leading: const Icon(Icons.person, color: Color(0xFF1976D2),),
+                      title: const Text('Name', style: TextStyle(fontWeight: FontWeight.w500),),
+                      subtitle: Text(user.displayName ?? 'Not Provided'),
+                    ),
+                  const Divider(indent: 70,),
+                  if (user != null)
+                    ListTile(
+                      leading: const Icon(Icons.email, color: Color(0xFF1976D2),),
+                      title: const Text('Email', style: TextStyle(fontWeight: FontWeight.w500),),
+                      subtitle: Text(user.email ?? 'Not provided'),
+                    ),
+                  const Divider(indent: 70,),
+                  if (user != null)
+                    ListTile(
+                      leading: const Icon(Icons.phone, color: Color(0xFF1976D2),),
+                      title: const Text('Phone', style: TextStyle(fontWeight: FontWeight.w500),),
+subtitle: Text(user.phoneNumber ?? 'Not provided'),
+                    ),
+                ],
+              ),
             ),
-          if (user != null)
-            ListTile(
-              leading: const Icon(Icons.email),
-              title: const Text('Email'),
-              subtitle: Text(user.email ?? 'Not provided'),
+
+            const SizedBox(height: 24),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  authController.logout();
+                },
+                icon: const Icon(Icons.logout, color: Colors.white,),
+                label: const Text('Logout', style: TextStyle(color: Colors.white),),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
             ),
-          if (user != null)
-            ListTile(
-              leading: const Icon(Icons.phone),
-              title: const Text('Phone'),
-              subtitle: Text(user.phoneNumber ?? 'Not provided'),
-            ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () {
-              authController.logout();
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

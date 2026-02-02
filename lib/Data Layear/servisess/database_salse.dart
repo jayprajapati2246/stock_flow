@@ -10,7 +10,7 @@ class TransactionService {
   String? get _transactionPath {
     final user = _authController.currentUser.value;
     if (user == null) return null;
-    return 'users/${user.id}/stock_transactions';
+    return 'users/${user.uid}/stock_transactions';
   }
 
   Future<void> addTransaction(Map<String, dynamic> transactionData) async {
@@ -27,7 +27,7 @@ class TransactionService {
     final user = _authController.currentUser.value;
     if (user == null) return Stream.value([]);
 
-    final path = 'users/${user.id}/stock_transactions';
+    final path = 'users/${user.uid}/stock_transactions';
     return _db.child(path).onValue.map((event) {
       final snapshot = event.snapshot;
       if (!snapshot.exists || snapshot.value == null) return [];
