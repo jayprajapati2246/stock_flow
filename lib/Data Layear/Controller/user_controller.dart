@@ -27,18 +27,4 @@ class UserController extends GetxController {
       currentUser.value = userModel;
     }
   }
-  //
-  // // Ensure the logout method is present
-  // Future<void> logout() async {
-  //   try {
-  //     debugPrint("Logout process started...");
-  //     await _auth.signOut();
-  //     debugPrint("Firebase sign out successful.");
-  //     Get.offAll(() => AuthWrapper());
-  //     debugPrint("Navigated to AuthWrapper.");
-  //   } catch (e) {
-  //     debugPrint("Error during logout: $e");
-  //     Get.snackbar("Logout Error", "An error occurred: ${e.toString()}");
-  //   }
-  // }
 }

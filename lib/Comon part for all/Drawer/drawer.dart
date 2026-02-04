@@ -30,7 +30,7 @@ class _CommonDrawerState extends State<CommonDrawer> {
                 backgroundImage: (user?.photoURL != null)
                     ? NetworkImage(user!.photoURL!)
                     : const AssetImage("assates/image/images.png")
-                        as ImageProvider,
+                as ImageProvider,
               ),
               accountName: Text(
                 user?.displayName ?? "Stock Flow",
@@ -57,7 +57,7 @@ class _CommonDrawerState extends State<CommonDrawer> {
               Get.back();
             },
           ),
-          
+
           ListTile(
             leading: const Icon(Icons.point_of_sale, color: Colors.blue),
             title: const Text("Sales Entry"),
@@ -66,7 +66,7 @@ class _CommonDrawerState extends State<CommonDrawer> {
               Get.back();
             },
           ),
-          
+
           Obx(() {
             if (authController.isAdmin.value) {
               return ListTile(

@@ -89,7 +89,7 @@ class DashboardManageController extends GetxController {
         if (entry.value == 0) continue;
 
         final product =
-            productController.allProducts.firstWhere((p) => p.id == entry.key);
+        productController.allProducts.firstWhere((p) => p.id == entry.key);
 
         final newQuantity = product.quantity + entry.value;
 

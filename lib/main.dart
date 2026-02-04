@@ -28,7 +28,7 @@ class Inventory extends StatelessWidget {
       initialRoute: '/',
       getPages: [
         GetPage(name: '/', page: () => const InventorySplash()),
-         ...AppPages.routes,
+        ...AppPages.routes,
       ],
     );
   }

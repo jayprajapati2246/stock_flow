@@ -95,67 +95,67 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: height * 0.09),
-              
+
               Obx(() => ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                ),
+                onPressed:
+                (controller.isLoginLoading.value || controller.isGoogleLoading.value) ? null : controller.login,
+                child: Container(
+                  alignment: Alignment.center,
+                  width: double.infinity,
+                  height: height * 0.07,
+                  child: controller.isLoginLoading.value
+                      ? const CircularProgressIndicator(color: Colors.blueAccent)
+                      : const Text(
+                    "Login",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
                     ),
-                    onPressed:
-                        (controller.isLoginLoading.value || controller.isGoogleLoading.value) ? null : controller.login,
-                    child: Container(
-                      alignment: Alignment.center,
-                      width: double.infinity,
-                      height: height * 0.07,
-                      child: controller.isLoginLoading.value
-                          ? const CircularProgressIndicator(color: Colors.blueAccent)
-                          : const Text(
-                              "Login",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22,
-                              ),
-                            ),
-                    ),
-                  )),
+                  ),
+                ),
+              )),
               const Divider(color: Colors.white, thickness: 1),
               Obx(() => ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                ),
+                onPressed: (controller.isLoginLoading.value || controller.isGoogleLoading.value)
+                    ? null
+                    : controller.signInWithGoogle,
+                child: Container(
+                  alignment: Alignment.center,
+                  width: double.infinity,
+                  height: height * 0.07,
+                  child: controller.isGoogleLoading.value
+                      ? const CircularProgressIndicator(color: Colors.blueAccent)
+                      : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.g_mobiledata,
+                          color: Colors.black, size: 30),
+                      SizedBox(width: 10),
+                      Text(
+                        "Login With Google",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                        ),
                       ),
-                    ),
-                    onPressed: (controller.isLoginLoading.value || controller.isGoogleLoading.value)
-                        ? null
-                        : controller.signInWithGoogle,
-                    child: Container(
-                      alignment: Alignment.center,
-                      width: double.infinity,
-                      height: height * 0.07,
-                      child: controller.isGoogleLoading.value
-                          ? const CircularProgressIndicator(color: Colors.blueAccent)
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.g_mobiledata,
-                                    color: Colors.black, size: 30),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Login With Google",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  )),
+                    ],
+                  ),
+                ),
+              )),
               SizedBox(height: height * 0.01),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

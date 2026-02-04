@@ -213,18 +213,18 @@ class _DashboardState extends State<Dashboard> {
         backgroundColor: Colors.black,
         child: product != null && product.image.isNotEmpty
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(24.0),
-                child: Image.network(
-                  product.image,
-                  fit: BoxFit.cover,
-                  width: 48,
-                  height: 48,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.white,
-                  ),
-                ),
-              )
+          borderRadius: BorderRadius.circular(24.0),
+          child: Image.network(
+            product.image,
+            fit: BoxFit.cover,
+            width: 48,
+            height: 48,
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.image_not_supported,
+              color: Colors.white,
+            ),
+          ),
+        )
             : const Icon(Icons.inventory_2, color: Colors.white),
       );
     } else {

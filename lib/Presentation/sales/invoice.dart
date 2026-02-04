@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:stock_flow/Presentation/sales/PDFdowload.dart';
 
 class InvoicePage extends GetView<SalesController> {
   const InvoicePage({super.key});
@@ -324,7 +327,7 @@ class InvoicePage extends GetView<SalesController> {
               ),
             ),
             onPressed: () {
-              // UI only (PDF logic later)
+              PdfDowload.generateInvoicePdf(controller);
             },
           ),
         ),
@@ -355,3 +358,4 @@ class InvoicePage extends GetView<SalesController> {
     );
   }
 }
+
