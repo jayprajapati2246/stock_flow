@@ -1,13 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:stock_flow/Data Layear/Controller/sales_controller.dart';
-import 'package:stock_flow/Comon part for all/search Product/searchbar.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
+import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/search%20Product/searchbar.dart';
 import 'package:stock_flow/Presentation/sales/invoice.dart';
-
-enum MenuAction { clearSort }
 
 class SalesEntryPage extends StatefulWidget {
   const SalesEntryPage({Key? key}) : super(key: key);
@@ -18,8 +16,6 @@ class SalesEntryPage extends StatefulWidget {
 
 class _SalesEntryPageState extends State<SalesEntryPage> {
   late final SalesController controller;
-
-  /// Quantity controllers only for this page
   final Map<String, TextEditingController> _quantityControllers = {};
 
   @override
@@ -38,380 +34,436 @@ class _SalesEntryPageState extends State<SalesEntryPage> {
   }
 
   void _showFilterMenu(BuildContext context) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<dynamic>(
+    final theme = Theme.of(context);
+    showModalBottomSheet(
       context: context,
-      position: position,
-      items: [
-        const PopupMenuItem<ProductFilter>(
-          value: ProductFilter.all,
-          child: Text("All Products"),
-        ),
-        const PopupMenuItem<ProductFilter>(
-          value: ProductFilter.lowStock,
-          child: Text("Low Stock"),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.aToZ,
-          child: Text("Sort by Name (A-Z)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.zToA,
-          child: Text("Sort by Name (Z-A)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.priceHighToLow,
-          child: Text("Sort by Price (High-Low)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.priceLowToHigh,
-          child: Text("Sort by Price (Low-High)"),
-        ),
-        if (controller.selectedSort.value != null) ...[
-          const PopupMenuDivider(),
-          const PopupMenuItem<MenuAction>(
-            value: MenuAction.clearSort,
-            child: Text("Clear Sort"),
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
-        ]
-      ],
-    ).then((value) {
-      if (value != null) {
-        if (value is ProductFilter) {
-          controller.setFilter(value);
-        } else if (value is ProductSort) {
-          controller.setSort(value);
-        } else if (value is MenuAction && value == MenuAction.clearSort) {
-          controller.setSort(null);
-        }
-      }
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text("Filter & Sort", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 24),
+              Text("Filter By", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.hintColor)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                children: [
+                  _filterChip(context, "All", ProductFilter.all),
+                  _filterChip(context, "Low Stock", ProductFilter.lowStock),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text("Sort By", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.hintColor)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _sortChip(context, "A-Z", ProductSort.aToZ),
+                  _sortChip(context, "Z-A", ProductSort.zToA),
+                  _sortChip(context, "Price: High-Low", ProductSort.priceHighToLow),
+                  _sortChip(context, "Price: Low-High", ProductSort.priceLowToHigh),
+                ],
+              ),
+              const SizedBox(height: 32),
+              if (controller.selectedSort.value != null || controller.selectedFilter.value != ProductFilter.all)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      controller.setSort(null);
+                      controller.setFilter(ProductFilter.all);
+                      Navigator.pop(context);
+                    },
+                    style: OutlinedButton.styleFrom(foregroundColor: PremiumTheme.secondaryColor, side: const BorderSide(color: PremiumTheme.secondaryColor)),
+                    child: const Text("Reset Filters"),
+                  ),
+                ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _filterChip(BuildContext context, String label, ProductFilter filter) {
+    return Obx(() {
+      final isSelected = controller.selectedFilter.value == filter;
+      return ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) {
+            controller.setFilter(filter);
+            Navigator.pop(context);
+          }
+        },
+        selectedColor: PremiumTheme.primaryColor,
+        labelStyle: GoogleFonts.inter(color: isSelected ? Colors.white : null, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        showCheckmark: false,
+      );
+    });
+  }
+
+  Widget _sortChip(BuildContext context, String label, ProductSort sort) {
+    return Obx(() {
+      final isSelected = controller.selectedSort.value == sort;
+      return ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) {
+            controller.setSort(sort);
+            Navigator.pop(context);
+          }
+        },
+        selectedColor: PremiumTheme.primaryColor,
+        labelStyle: GoogleFonts.inter(color: isSelected ? Colors.white : null, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        showCheckmark: false,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // -------- SALE DATE --------
-            _buildSection(
-              title: "Sale Details",
-              child: Obx(
-                () => _buildInfoTile(
-                  icon: Icons.calendar_today,
-                  label: "Sale Date",
-                  value: DateFormat('MMMM dd, yyyy')
-                      .format(controller.selectedDate.value),
-                  onTap: () => controller.selectDate(context),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-            // -------- ADD PRODUCTS --------
-            _buildSection(
-              title: "Add Products",
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Builder(builder: (context) {
-                    return CommonSearchBar(
-                      controller: controller.searchController,
-                      hintText: "Search product...",
-                      onChanged: controller.filterProducts,
-                      padding: EdgeInsets.zero,
-                      iconSize: 24,
-                      height: 48,
-                      onFilterTap: () {
-                        _showFilterMenu(context);
-                      },
-                    );
-                  }),
-                  const Divider(height: 20),
+                  _buildSectionTitle(context, "Sale Details"),
+                  const SizedBox(height: 16),
+                  Obx(() => _buildInfoCard(
+                    context,
+                    icon: Icons.calendar_today_rounded,
+                    label: "Transaction Date",
+                    value: DateFormat('MMMM dd, yyyy').format(controller.selectedDate.value),
+                    onTap: () => controller.selectDate(context),
+                  )),
+                  const SizedBox(height: 32),
+                  _buildSectionTitle(context, "Search Products"),
+                  const SizedBox(height: 16),
+                  CommonSearchBar(
+                    controller: controller.searchController,
+                    hintText: "Search items to add to cart...",
+                    onChanged: controller.filterProducts,
+                    padding: EdgeInsets.zero,
+                    onFilterTap: () => _showFilterMenu(context),
+                  ),
+                  const SizedBox(height: 24),
                   Obx(() {
                     if (controller.filteredProducts.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(child: Text("No products found")),
-                      );
+                      return _buildEmptySearchState(context);
                     }
-                    return Column(
-                      children: controller.filteredProducts.map((product) {
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: controller.filteredProducts.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final product = controller.filteredProducts[index];
                         final qtyController = _quantityControllers.putIfAbsent(
                           product.id!,
                           () => TextEditingController(text: '1'),
                         );
-                        return _buildProductTile(product, qtyController);
-                      }).toList(),
+                        return _buildProductListItem(context, product, qtyController);
+                      },
                     );
                   }),
+                  const SizedBox(height: 32),
+                  _buildSectionTitle(context, "Order Summary"),
+                  const SizedBox(height: 16),
+                  _buildSummaryCard(context),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-
-            // -------- ORDER SUMMARY --------
-            _buildSection(
-              title: "Order Summary",
-              child: Column(
-                children: [
-                  Obx(() => _buildSummaryRow("Subtotal", controller.subtotal)),
-                  const SizedBox(height: 10),
-                  _buildDiscountRow(),
-                  const Divider(height: 30),
-                  Obx(() => _buildSummaryRow(
-                        "Total",
-                        controller.totalAmount,
-                        isTotal: true,
-                      )),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // -------- PROCEED --------
-            ElevatedButton(
-              onPressed: () {
-                if (controller.cartItems.isEmpty) {
-                  Get.snackbar(
-                    "Cart Empty",
-                    "Please add at least one product",
-                    snackPosition: SnackPosition.TOP,
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: Colors.red.shade600,
-                    colorText: Colors.white,
-                    borderRadius: 14,
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 16),
-                    icon: const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    shouldIconPulse: false,
-                    boxShadows: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  );
-                } else {
-                  Get.to(() => const InvoicePage());
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Theme.of(context).primaryColor,
-              ),
-              child: const Text(
-                "Proceed to Invoice",
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+          ),
+          _buildBottomAction(context),
+        ],
       ),
     );
   }
 
-  // ---------- HELPERS ----------
-
-  Widget _buildSection({required String title, required Widget child}) {
-    return Card(
-      elevation: 2,
-      color: Colors.white,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
       ),
     );
   }
 
-  Widget _buildInfoTile({
-    required IconData icon,
-    required String label,
-    required String value,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).primaryColor),
-      title: Text(label),
-      subtitle: Text(
-        value,
-        style: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-      ),
+  Widget _buildInfoCard(BuildContext context, {required IconData icon, required String label, required String value, required VoidCallback onTap}) {
+    final theme = Theme.of(context);
+    return InkWell(
       onTap: onTap,
-      trailing: onTap != null ? const Icon(Icons.arrow_drop_down) : null,
-      contentPadding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: PremiumTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.calendar_month_rounded, color: PremiumTheme.primaryColor, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const Spacer(),
+            Icon(Icons.edit_calendar_rounded, color: theme.hintColor, size: 20),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildProductTile(product, TextEditingController qtyController) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+  Widget _buildProductListItem(BuildContext context, product, TextEditingController qtyController) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.dividerColor),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade100,
+              color: isDark ? PremiumTheme.darkBg : PremiumTheme.lightBg,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: product.image.isNotEmpty
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      product.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.image_not_supported,
-                        size: 60,
-                        color: Colors.black54,
-                      ),
-                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(product.image, fit: BoxFit.cover),
                   )
-                : const Icon(Icons.inventory_2_outlined, color: Colors.grey),
+                : Icon(Icons.inventory_2_outlined, color: theme.dividerColor, size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
-                ),
+                Text(product.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text("Stock: ${product.quantity}",
-                    style: TextStyle(color: Colors.grey.shade600)),
+                Text("Stock: ${product.quantity}", style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: product.quantity < 10 ? PremiumTheme.secondaryColor : const Color(0xFF10B981))),
               ],
             ),
           ),
-          SizedBox(
+          Container(
             width: 50,
-            height: 35,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isDark ? PremiumTheme.darkBg : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.dividerColor),
+            ),
             child: TextField(
               controller: qtyController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
               decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+                border: InputBorder.none, 
                 contentPadding: EdgeInsets.zero,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
+          const SizedBox(width: 12),
+          IconButton(
             onPressed: product.quantity > 0
                 ? () {
                     final qty = int.tryParse(qtyController.text) ?? 1;
                     controller.addToCart(product, qty);
                     Get.snackbar(
-                      "Added",
+                      "Cart Updated",
                       "${product.name} added to cart",
                       snackPosition: SnackPosition.TOP,
-                      duration: const Duration(seconds: 2),
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                      borderRadius: 18,
-                      margin: const EdgeInsets.all(14),
-                      boxShadows: [
-                        BoxShadow(
-                          color: Colors.deepPurpleAccent.withOpacity(0.4),
-                          blurRadius: 12,
-                          spreadRadius: 1,
-                        ),
-                      ],
+                      backgroundColor: theme.cardTheme.color,
+                      colorText: theme.textTheme.bodyLarge?.color,
+                      margin: const EdgeInsets.all(16),
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: theme.dividerColor,
                     );
                   }
                 : null,
-            child: const Icon(Icons.add),
+            icon: Icon(Icons.add_circle_rounded, color: product.quantity > 0 ? PremiumTheme.primaryColor : theme.dividerColor, size: 36),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, double value, {bool isTotal = false}) {
+  Widget _buildSummaryCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Column(
+        children: [
+          _buildSummaryRow(context, "Subtotal", Obx(() => Text("₹${controller.subtotal.toStringAsFixed(2)}", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)))),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Discount (%)", style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Container(
+                width: 70,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? PremiumTheme.darkBg : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                child: TextField(
+                  controller: controller.discountController,
+                  keyboardType: TextInputType.number,
+                  onChanged: controller.updateDiscount,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none, 
+                    contentPadding: EdgeInsets.zero,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Divider()),
+          _buildSummaryRow(
+            context,
+            "Total Amount",
+            Obx(() => Text("₹${controller.totalAmount.toStringAsFixed(2)}", 
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: PremiumTheme.primaryColor))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(BuildContext context, String label, Widget value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            fontSize: isTotal ? 16 : 14,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        Text(
-          "₹ ${value.toStringAsFixed(2)}",
-          style: TextStyle(
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-            fontSize: isTotal ? 20 : 16,
-            color: isTotal ? Theme.of(context).primaryColor : Colors.black87,
-          ),
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).hintColor)),
+        value,
       ],
     );
   }
 
-  Widget _buildDiscountRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text("Discount (%)", style: TextStyle(color: Colors.grey.shade600)),
-        SizedBox(
-          width: 70,
-          height: 40,
-          child: TextField(
-            controller: controller.discountController,
-            keyboardType: TextInputType.number,
-            onChanged: controller.updateDiscount,
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
+  Widget _buildBottomAction(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, -5))],
+      ),
+      child: ElevatedButton(
+        onPressed: () {
+          if (controller.cartItems.isEmpty) {
+            Get.snackbar("Empty Cart", "Please add some items first", backgroundColor: PremiumTheme.secondaryColor, colorText: Colors.white);
+          } else {
+            Get.to(() => const InvoicePage());
+          }
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.receipt_long_rounded, size: 22),
+            const SizedBox(width: 12),
+            const Text("Review Invoice"),
+            const SizedBox(width: 8),
+            Obx(() => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+              child: Text("${controller.cartItems.length}", style: const TextStyle(fontSize: 12)),
+            )),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchState(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded, size: 48, color: theme.dividerColor),
+          const SizedBox(height: 12),
+          Text("No items match your search", style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
+        ],
+      ),
     );
   }
 }

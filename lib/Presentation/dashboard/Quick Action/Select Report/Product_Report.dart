@@ -1,15 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:stock_flow/Comon part for all/search Product/searchbar.dart';
-import 'package:stock_flow/Data Layear/Controller/product_controller.dart';
-import 'package:stock_flow/Data Layear/model/ProductModel/product_model.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/enums.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/search%20Product/searchbar.dart';
+import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
+import 'package:stock_flow/Data%20Layear/model/ProductModel/product_model.dart';
 import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Select%20Report/product_report_details.dart';
-
-enum ProductFilter { all, lowStock }
-enum ProductSort { aToZ, zToA, priceHighToLow, priceLowToHigh }
-enum MenuAction { clearSort }
 
 class selectProduct extends StatefulWidget {
   const selectProduct({super.key});
@@ -59,235 +56,306 @@ class _PeportProductState extends State<selectProduct> {
       });
     }
 
-    setState(() {
-      _filteredProducts = tempProducts;
-    });
+    if (mounted) {
+      setState(() {
+        _filteredProducts = tempProducts;
+      });
+    }
   }
 
   @override
   void dispose() {
+    searchController.removeListener(_filterProducts);
     searchController.dispose();
     super.dispose();
   }
 
   void _showFilterMenu(BuildContext context) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<dynamic>(
+    final theme = Theme.of(context);
+    showModalBottomSheet(
       context: context,
-      position: position,
-      items: [
-        const PopupMenuItem<ProductFilter>(
-          value: ProductFilter.all,
-          child: Text("All Products"),
-        ),
-        const PopupMenuItem<ProductFilter>(
-          value: ProductFilter.lowStock,
-          child: Text("Low Stock"),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.aToZ,
-          child: Text("Sort by Name (A-Z)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.zToA,
-          child: Text("Sort by Name (Z-A)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.priceHighToLow,
-          child: Text("Sort by Price (High-Low)"),
-        ),
-        const PopupMenuItem<ProductSort>(
-          value: ProductSort.priceLowToHigh,
-          child: Text("Sort by Price (Low-High)"),
-        ),
-        if (_selectedSort != null) ...[
-          const PopupMenuDivider(),
-          const PopupMenuItem<MenuAction>(
-            value: MenuAction.clearSort,
-            child: Text("Clear Sort"),
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
-        ]
-      ],
-    ).then((value) {
-      if (value != null) {
-        setState(() {
-          if (value is ProductFilter) {
-            _selectedFilter = value;
-          } else if (value is ProductSort) {
-            _selectedSort = value;
-          } else if (value is MenuAction && value == MenuAction.clearSort) {
-            _selectedSort = null;
-          }
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.dividerColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text("Report Filters", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 24),
+              _buildSectionTitle(context, "Filter Status"),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                children: [
+                  _filterChip(context, "All Products", ProductFilter.all),
+                  _filterChip(context, "Low Stock", ProductFilter.lowStock),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle(context, "Sort Results"),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _sortChip(context, "Name (A-Z)", ProductSort.aToZ),
+                  _sortChip(context, "Name (Z-A)", ProductSort.zToA),
+                  _sortChip(context, "Price: High-Low", ProductSort.priceHighToLow),
+                  _sortChip(context, "Price: Low-High", ProductSort.priceLowToHigh),
+                ],
+              ),
+              const SizedBox(height: 32),
+              if (_selectedSort != null || _selectedFilter != ProductFilter.all)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedSort = null;
+                        _selectedFilter = ProductFilter.all;
+                      });
+                      _filterProducts();
+                      Navigator.pop(context);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: PremiumTheme.secondaryColor,
+                      side: const BorderSide(color: PremiumTheme.secondaryColor),
+                    ),
+                    child: const Text("Reset All Filters"),
+                  ),
+                ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Text(
+      title.toUpperCase(),
+      style: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+        color: theme.hintColor,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _filterChip(BuildContext context, String label, ProductFilter filter) {
+    final isSelected = _selectedFilter == filter;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() => _selectedFilter = filter);
           _filterProducts();
-        });
-      }
-    });
+          Navigator.pop(context);
+        }
+      },
+      selectedColor: PremiumTheme.primaryColor,
+      labelStyle: GoogleFonts.inter(color: isSelected ? Colors.white : null, fontWeight: FontWeight.w600),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      showCheckmark: false,
+    );
+  }
+
+  Widget _sortChip(BuildContext context, String label, ProductSort sort) {
+    final isSelected = _selectedSort == sort;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() => _selectedSort = sort);
+          _filterProducts();
+          Navigator.pop(context);
+        }
+      },
+      selectedColor: PremiumTheme.primaryColor,
+      labelStyle: GoogleFonts.inter(color: isSelected ? Colors.white : null, fontWeight: FontWeight.w600),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      showCheckmark: false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Select Product report",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: isDark ? Colors.white : PremiumTheme.lightTextPrimary, size: 20),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          "Product Reports",
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: Column(
         children: [
-          // ---------------- SEARCH BAR ----------------
-          Builder(builder: (context) {
-            return CommonSearchBar(
-              controller: searchController,
-              hintText: "Search products...",
-              height: 42,
-              iconSize: 18,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              onFilterTap: () {
-                _showFilterMenu(context);
-              },
-              onChanged: (value) {
-                _filterProducts();
-              },
-            );
-          }),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: "${_selectedFilter == ProductFilter.lowStock ? 'Low Stock' : 'Total'} Products${_selectedSort != null ? ' (Sorted)' : ''}: ",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: "${_filteredProducts.length}"),
-                  ],
+            padding: const EdgeInsets.only(top: 8.0),
+            child: CommonSearchBar(
+              controller: searchController,
+              hintText: "Select a product for detailed report...",
+              onFilterTap: () => _showFilterMenu(context),
+              onChanged: (value) => _filterProducts(),
+            ),
+          ),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "${_selectedFilter == ProductFilter.lowStock ? 'Low Stock' : 'Total'}: ${_filteredProducts.length}",
+                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800),
                 ),
-              ),
+                if (_selectedSort != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: PremiumTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text("Sorted", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: PremiumTheme.primaryColor)),
+                  ),
+              ],
             ),
           ),
 
-          const SizedBox(height: 5),
-
-          // ---------------- PRODUCT LIST ----------------
           Expanded(
             child: _filteredProducts.isEmpty
-                ? const Center(
-                    child: Text(
-                      "No products found",
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  )
-                : ListView.builder(
+                ? _buildEmptyState(context)
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     itemCount: _filteredProducts.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final product = _filteredProducts[index];
-
-                      return InkWell(
-                        onTap: () {
-                          Get.to(() => ProductReportDetails(product: product));
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(10),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // ---------------- IMAGE ----------------
-                              Container(
-                                height: 70,
-                                width: 70,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: product.image.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child:Image.network(
-                                          product.image,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  const Icon(
-                                            Icons.image_not_supported,
-                                            size: 60,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.inventory_2,
-                                        size: 40,
-                                        color: Colors.black54,
-                                      ),
-                              ),
-
-                              const SizedBox(width: 16),
-
-                              // ---------------- DETAILS ----------------
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      product.name,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Stock: ${product.quantity}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      return _buildProductCard(context, product);
                     },
                   ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, ProductModel product) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.to(() => ProductReportDetails(product: product)),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  height: 64,
+                  width: 64,
+                  decoration: BoxDecoration(
+                    color: isDark ? PremiumTheme.darkBg : PremiumTheme.lightBg,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: product.image.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image_outlined, color: theme.dividerColor),
+                          ),
+                        )
+                      : Icon(Icons.inventory_2_rounded, color: PremiumTheme.primaryColor.withOpacity(0.5), size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Stock Level: ${product.quantity}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: product.quantity <= 5 ? PremiumTheme.secondaryColor : const Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.dividerColor),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 64, color: theme.dividerColor),
+          const SizedBox(height: 16),
+          Text("No products found", style: theme.textTheme.titleMedium?.copyWith(color: theme.hintColor)),
         ],
       ),
     );

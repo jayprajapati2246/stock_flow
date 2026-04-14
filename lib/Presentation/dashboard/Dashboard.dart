@@ -1,13 +1,15 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
 import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
 import 'package:stock_flow/Data%20Layear/model/SaleModel/sale_model.dart';
-import 'package:stock_flow/Presentation/dashboard/Quick Action/Add_product.dart';
-import 'package:stock_flow/Presentation/dashboard/Quick Action/Manage_Quantity.dart';
-import 'package:stock_flow/Presentation/dashboard/Quick Action/Remove_Product.dart';
-import 'package:stock_flow/Presentation/dashboard/Quick Action/Select Report/Product_Report.dart';
+import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Add_product.dart';
+import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Manage_Quantity.dart';
+import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Remove_Product.dart';
+import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Select%20Report/Product_Report.dart';
 import 'package:stock_flow/Presentation/dashboard/status/MonthlySales.dart';
 import 'package:stock_flow/Presentation/dashboard/status/TodaySales.dart';
 import 'package:stock_flow/Presentation/dashboard/status/low_stock_screen.dart';
@@ -26,103 +28,132 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      body: Container(
-        color: Colors.white54,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Implement refresh logic if needed
+        },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Current Status",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-
+              _buildSectionHeader(context, "Overview", null),
+              const SizedBox(height: 16),
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.3,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.05,
                 children: [
-                  _buildAllProductsCard(),
-                  _buildLowStockCard(),
-                  _buildWeeklySales(),
-                  _buildMonthlySales(),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              const Text(
-                "Quick Actions",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.5,
-                children: [
-                  _actionCard(
-                    "Add Product",
-                    Icons.add,
-                    Colors.green,
-                        () => Get.to(() => const AddProduct()),
+                  _buildStatusCard(
+                    context,
+                    "Total Products",
+                    Obx(() => Text(productController.allProducts.length.toString(),
+                        style: theme.textTheme.displaySmall?.copyWith(fontSize: 22))),
+                    Icons.inventory_2_rounded,
+                    PremiumTheme.primaryColor,
+                    () => Get.to(() => const ShowAllProduct()),
                   ),
-                  _actionCard(
-                    "Remove Product",
-                    Icons.remove_circle_outline,
-                    Colors.redAccent,
-                        () => Get.to(() => const RemoveProduct()),
+                  _buildStatusCard(
+                    context,
+                    "Low Stock",
+                    Obx(() => Text(productController.lowStockCount.toString(),
+                        style: theme.textTheme.displaySmall?.copyWith(fontSize: 22))),
+                    Icons.warning_amber_rounded,
+                    PremiumTheme.secondaryColor,
+                    () => Get.to(() => const LowStockScreen()),
                   ),
-                  _actionCard(
-                    "Product Report",
-                    Icons.bar_chart,
-                    Colors.blueAccent,
-                        () => Get.to(() => const selectProduct()),
+                  _buildStatusCard(
+                    context,
+                    "Weekly Sales",
+                    const Icon(Icons.trending_up_rounded, color: Colors.white, size: 22),
+                    Icons.bar_chart_rounded,
+                    const Color(0xFF10B981),
+                    () => Get.to(() => const weeklysales()),
+                    useCustomIcon: true,
                   ),
-                  _actionCard(
-                    "Manage Quantity",
-                    Icons.repeat,
-                    Colors.purple,
-                        () => Get.to(() => const ManageQuantity()),
+                  _buildStatusCard(
+                    context,
+                    "Monthly Sales",
+                    const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 22),
+                    Icons.analytics_rounded,
+                    const Color(0xFFF59E0B),
+                    () => Get.to(() => const monthlysales()),
+                    useCustomIcon: true,
                   ),
                 ],
               ),
-
+              const SizedBox(height: 32),
+              _buildSectionHeader(context, "Quick Actions", null),
               const SizedBox(height: 16),
-              const Text(
-                "Recent Transactions",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                decoration: BoxDecoration(
+                  color: theme.cardTheme.color,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                child: Row(
+                  children: [
+                    _buildQuickAction(
+                      context,
+                      "Add",
+                      Icons.add_circle_outline_rounded,
+                      PremiumTheme.primaryColor,
+                      () => Get.to(() => const AddProduct()),
+                    ),
+                    _buildQuickAction(
+                      context,
+                      "Remove",
+                      Icons.remove_circle_outline_rounded,
+                      PremiumTheme.secondaryColor,
+                      () => Get.to(() => const RemoveProduct()),
+                    ),
+                    _buildQuickAction(
+                      context,
+                      "Report",
+                      Icons.description_outlined,
+                      const Color(0xFF10B981),
+                      () => Get.to(() => const selectProduct()),
+                    ),
+                    _buildQuickAction(
+                      context,
+                      "Manage",
+                      Icons.tune_rounded,
+                      PremiumTheme.accentColor,
+                      () => Get.to(() => const ManageQuantity()),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-
+              const SizedBox(height: 32),
+              _buildSectionHeader(
+                context, 
+                "Recent Transactions", 
+                () {},
+              ),
+              const SizedBox(height: 16),
               Obx(() {
-                final recentSales =
-                salesController.sales.take(5).toList();
-
+                final recentSales = salesController.sales.take(5).toList();
                 if (recentSales.isEmpty) {
-                  return const Center(
-                    child: Text("No recent transactions"),
-                  );
+                  return _buildEmptyState(context);
                 }
-
-                return ListView.builder(
+                return ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: recentSales.length,
-                  itemBuilder: (context, index) {
-                    return _transactionItem(recentSales[index]);
-                  },
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) => _buildTransactionItem(context, recentSales[index]),
                 );
               }),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -130,167 +161,91 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  // ---------------- STATUS CARDS ----------------
-
-  Widget _buildAllProductsCard() {
-    return GestureDetector(
-      onTap: () => Get.to(() => const ShowAllProduct()),
-      child: _statusCard(
-        title: "Total Products",
-        icon: Icons.inventory,
-        color: Colors.green,
-        value: Obx(() => Text(
-          productController.allProducts.length.toString(),
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+  Widget _buildSectionHeader(BuildContext context, String title, VoidCallback? onAction, {String actionLabel = "See All"}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
           ),
-        )),
-
-      ),
-    );
-  }
-
-  Widget _buildLowStockCard() {
-    return GestureDetector(
-      onTap: () => Get.to(() => const LowStockScreen()),
-      child: _statusCard(
-        title: "Low Stock",
-        icon: Icons.warning,
-        color: Colors.deepOrange,
-        value: Obx(() => Text(
-          productController.lowStockCount.toString(),
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        )),
-
-      ),
-    );
-  }
-
-  Widget _buildWeeklySales() {
-    return GestureDetector(
-      onTap: () => Get.to(() => const weeklysales()),
-      child: _simpleCard(
-        "Weekly Sales",
-        Icons.bar_chart,
-        Colors.blue,
-      ),
-    );
-  }
-
-  Widget _buildMonthlySales() {
-    return GestureDetector(
-      onTap: () => Get.to(() => const monthlysales()),
-      child: _simpleCard(
-        "Monthly Sales",
-        Icons.bar_chart,
-        Colors.purple,
-      ),
-    );
-  }
-
-  // ---------------- TRANSACTION ITEM ----------------
-
-  Widget _transactionItem(SaleModel sale) {
-    if (sale.items.isEmpty) return const SizedBox.shrink();
-
-    String title;
-    String subtitle;
-    Widget avatar;
-
-    if (sale.items.length == 1) {
-      final item = sale.items.first;
-      title = item['name'] ?? 'Unknown Product';
-      subtitle = "${item['quantity']} units sold";
-      final product = productController.allProducts.firstWhereOrNull((p) => p.id == item['id']);
-      avatar = CircleAvatar(
-        radius: 24,
-        backgroundColor: Colors.black,
-        child: product != null && product.image.isNotEmpty
-            ? ClipRRect(
-          borderRadius: BorderRadius.circular(24.0),
-          child: Image.network(
-            product.image,
-            fit: BoxFit.cover,
-            width: 48,
-            height: 48,
-            errorBuilder: (context, error, stackTrace) => const Icon(
-              Icons.image_not_supported,
-              color: Colors.white,
-            ),
-          ),
-        )
-            : const Icon(Icons.inventory_2, color: Colors.white),
-      );
-    } else {
-      title = "Multiple Items";
-      subtitle = "${sale.items.length} products sold";
-      avatar = const CircleAvatar(
-        radius: 24,
-        backgroundColor: Colors.black,
-        child: Icon(Icons.shopping_cart, color: Colors.white),
-      );
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            avatar,
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                ],
+        ),
+        if (onAction != null)
+          TextButton(
+            onPressed: onAction,
+            child: Text(
+              actionLabel,
+              style: GoogleFonts.inter(
+                color: PremiumTheme.primaryColor,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              "+ ₹${sale.totalAmount.toStringAsFixed(2)}",
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.green),
-            ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
-  // ---------------- REUSABLE WIDGETS ----------------
+  Widget _buildStatusCard(
+    BuildContext context, 
+    String title, 
+    Widget value, 
+    IconData icon, 
+    Color color, 
+    VoidCallback onTap,
+    {bool useCustomIcon = false}
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-  Widget _actionCard(
-      String title, IconData icon, Color color, VoidCallback onTap) {
-    return Card(
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: InkWell(
-        onTap: onTap,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.dividerColor),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 40, color: Colors.white),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: value,
+            ),
+            const SizedBox(height: 2),
             Text(
               title,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.white),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -298,45 +253,179 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget _simpleCard(String title, IconData icon, Color color) {
-    return Card(
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildQuickAction(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: isDark ? PremiumTheme.darkTextPrimary : PremiumTheme.lightTextPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionItem(BuildContext context, SaleModel sale) {
+    if (sale.items.isEmpty) return const SizedBox.shrink();
+    
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bool isMultiple = sale.items.length > 1;
+    final item = sale.items.first;
+    final title = isMultiple ? "Bulk Sale" : (item['name'] ?? 'Product');
+    
+    final dateStr = DateFormat('dd MMM').format(sale.date);
+    final subtitle = isMultiple ? "${sale.items.length} items • $dateStr" : "${item['quantity']} units • $dateStr";
+    
+    String? imageUrl;
+    if (!isMultiple) {
+      final product = productController.allProducts.firstWhereOrNull((p) => p.id == item['id']);
+      if (product != null && product.image.isNotEmpty) {
+        imageUrl = product.image;
+      }
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
         children: [
-          Icon(icon, size: 40, color: Colors.white),
-          const SizedBox(height: 8),
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white)),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: PremiumTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: (isMultiple || imageUrl == null)
+              ? Icon(
+                  isMultiple ? Icons.auto_awesome_motion_rounded : Icons.inventory_2_rounded,
+                  color: PremiumTheme.primaryColor,
+                  size: 20,
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.inventory_2_rounded,
+                      color: PremiumTheme.primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "₹${sale.totalAmount.toStringAsFixed(0)}",
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF10B981),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  "PAID",
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _statusCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required Widget value,
-  }) {
-    return Card(
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor, style: BorderStyle.solid),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 35, color: Colors.white),
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white)),
-          const SizedBox(height: 6),
-          value,
+          Icon(Icons.receipt_long_outlined, size: 64, color: theme.dividerColor),
+          const SizedBox(height: 16),
+          Text(
+            "No transactions yet", 
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: PremiumTheme.lightTextSecondary,
+            )
+          ),
         ],
       ),
     );

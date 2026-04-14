@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/auth_controller.dart';
+import 'package:stock_flow/Data%20Layear/Controller/theme_controller.dart';
 import 'package:stock_flow/app_routes.dart';
-
 import 'package:stock_flow/firebase_options.dart';
 
 Future<void> main() async {
@@ -13,6 +15,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  Get.put(ThemeController());
   Get.put(AuthController());
 
   runApp(const Inventory());
@@ -23,14 +27,19 @@ class Inventory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    final themeController = Get.find<ThemeController>();
+    
+    return Obx(() => GetMaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: PremiumTheme.light,
+      darkTheme: PremiumTheme.dark,
+      themeMode: themeController.isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
       initialRoute: '/',
       getPages: [
         GetPage(name: '/', page: () => const InventorySplash()),
         ...AppPages.routes,
       ],
-    );
+    ));
   }
 }
 
@@ -61,32 +70,62 @@ class _InventorySplashState extends State<InventorySplash> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
+      backgroundColor: PremiumTheme.primaryColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              height: size.height * 0.40,
-              width: size.width * 0.70,
+              height: size.height * 0.25,
+              width: size.width * 0.50,
               decoration: BoxDecoration(
+                color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.blueAccent,
-                  width: size.width * 0.015,
-                ),
-                image: const DecorationImage(
-                  image: AssetImage(
-                    "assates/image/compressed_8c0735e6a58151b89aa38dc0edbeaaa4.webp",
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                    offset: const Offset(0, 10),
                   ),
-                  fit: BoxFit.contain,
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.inventory_2_rounded,
+                  size: size.width * 0.25,
+                  color: PremiumTheme.primaryColor,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(color: Colors.blueAccent),
+            const SizedBox(height: 48),
+            const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 3,
+            ),
+            const SizedBox(height: 32),
+            Text(
+              "STOCK FLOW",
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 4.0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Premium Inventory Management",
+              style: GoogleFonts.inter(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.0,
+              ),
+            ),
           ],
         ),
       ),

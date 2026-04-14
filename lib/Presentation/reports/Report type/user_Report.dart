@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/user_controller.dart';
-
 
 class user_report extends StatelessWidget {
   const user_report({super.key});
@@ -9,135 +10,49 @@ class user_report extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserController controller = Get.put(UserController());
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "User Profile",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, 
+            color: isDark ? Colors.white : PremiumTheme.lightTextPrimary, 
+            size: 20
           ),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          "User Profile",
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: Obx(() {
         final user = controller.currentUser.value;
 
         if (user == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: PremiumTheme.primaryColor));
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- USER INFO CARD ---
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey.shade200,
-                        backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
-                            ? NetworkImage(user.photoURL!)
-                            : null,
-                        child: user.photoURL == null || user.photoURL!.isEmpty
-                            ? Icon(Icons.person, size: 50, color: Colors.grey.shade600)
-                            : null,
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        "${user.fname} ${user.lname}",
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        user.email,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const Divider(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Role: ",
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          // Text(
-                          //   user.role.toUpperCase(),
-                          //   style: const TextStyle(
-                          //     fontSize: 16,
-                          //     fontWeight: FontWeight.bold,
-                          //   ),
-                          // ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // --- ACTIONS CARD ---
-              // Card(
-              //   elevation: 2,
-              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              //   child: Padding(
-              //     padding: const EdgeInsets.all(12.0),
-              //     child: Column(
-              //       children: [
-              //         if (user.role == 'admin')
-              //           _buildActionButton(
-              //             context,
-              //             icon: Icons.admin_panel_settings,
-              //             label: "Admin Panel",
-              //             color: Colors.blue.shade700,
-              //             onTap: () {
-              //            //   Get.to(() => const AdminPanel());
-              //             },
-              //           ),
-              //         _buildActionButton(
-              //           context,
-              //           icon: Icons.settings,
-              //           label: "Settings",
-              //           color: Colors.grey.shade700,
-              //           onTap: () {
-              //             // TODO: Navigate to Settings
-              //             Get.snackbar("Settings", "Navigate to user settings");
-              //           },
-              //         ),
-              //         const Divider(),
-              //         _buildActionButton(
-              //           context,
-              //           icon: Icons.logout,
-              //           label: "Logout",
-              //           color: Colors.red.shade600,
-              //           onTap: () {
-              //             //controller.logout();
-              //           },
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              // ),
+              _buildProfileCard(context, user),
+              const SizedBox(height: 32),
+              _buildSectionHeader(context, "Account Security"),
+              const SizedBox(height: 16),
+              _buildSettingTile(context, Icons.lock_outline_rounded, "Change Password", "Update your security credentials", Colors.indigo),
+              const SizedBox(height: 12),
+              _buildSettingTile(context, Icons.shield_outlined, "Two-Factor Auth", "Enable extra protection", Colors.green),
+              const SizedBox(height: 32),
+              _buildSectionHeader(context, "Danger Zone"),
+              const SizedBox(height: 16),
+              _buildSettingTile(context, Icons.delete_outline_rounded, "Delete Account", "Permanently remove your data", PremiumTheme.secondaryColor),
+              const SizedBox(height: 40),
             ],
           ),
         );
@@ -145,20 +60,162 @@ class user_report extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, {
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color, size: 28),
-      title: Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+  Widget _buildProfileCard(BuildContext context, dynamic user) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+        ],
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      onTap: onTap,
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: PremiumTheme.primaryColor.withOpacity(0.2), width: 4),
+                ),
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: theme.dividerColor,
+                  backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
+                      ? NetworkImage(user.photoURL!)
+                      : const AssetImage('assates/image/images.png') as ImageProvider,
+                ),
+              ),
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: PremiumTheme.primaryColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: theme.scaffoldBackgroundColor, width: 4),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "${user.fname} ${user.lname}",
+            style: theme.textTheme.displaySmall?.copyWith(fontSize: 24),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: PremiumTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              user.email,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: PremiumTheme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Divider(color: theme.dividerColor),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStat(context, "STATUS", "Active"),
+              Container(width: 1, height: 30, color: theme.dividerColor),
+              _buildStat(context, "ROLE", "Administrator"),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStat(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: theme.hintColor, letterSpacing: 1)),
+        const SizedBox(height: 4),
+        Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: theme.hintColor,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingTile(BuildContext context, IconData icon, String title, String subtitle, Color color) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.dividerColor),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

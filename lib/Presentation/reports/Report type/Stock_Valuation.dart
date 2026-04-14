@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
 import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -12,31 +14,34 @@ class StockValuation extends StatelessWidget {
   Widget build(BuildContext context) {
     final ProductController productController = Get.find<ProductController>();
     final SalesController salesController = Get.find<SalesController>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final NumberFormat currencyFormat =
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: isDark ? Colors.white : PremiumTheme.lightTextPrimary,
+              size: 20),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
           "Stock Valuation",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style:
+              theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: Obx(() {
         if (productController.allProducts.isEmpty) {
-          return const Center(child: Text("No products in inventory."));
+          return _buildEmptyState(context);
         }
 
-        // --- CALCULATIONS ---
         final products = productController.allProducts;
-
-        // 1. Total Stock Value & Total Items
         double totalStockValue = 0;
         int totalItems = 0;
         for (final product in products) {
@@ -44,11 +49,9 @@ class StockValuation extends StatelessWidget {
           totalItems += product.quantity;
         }
 
-        // 2. Slow/Dead vs. Fast-Moving Stock
         final sixtyDaysAgo = DateTime.now().subtract(const Duration(days: 60));
         final recentSales =
             salesController.sales.where((s) => s.date.isAfter(sixtyDaysAgo));
-
         final soldProductIds = <String>{};
         for (final sale in recentSales) {
           for (final item in sale.items) {
@@ -57,152 +60,130 @@ class StockValuation extends StatelessWidget {
         }
 
         double slowStockValue = 0;
-        final slowMovingProducts = products
-            .where((p) => !soldProductIds.contains(p.id) && p.quantity > 0)
-            .toList();
-        for (final product in slowMovingProducts) {
-          slowStockValue += product.quantity * product.purchasePrice;
+        for (final product in products) {
+          if (!soldProductIds.contains(product.id) && product.quantity > 0) {
+            slowStockValue += product.quantity * product.purchasePrice;
+          }
         }
 
         final fastMovingValue = totalStockValue - slowStockValue;
-
-        // 3. Pie Chart Data
         final List<_ChartData> chartData = [
-          _ChartData('Fast-Moving', fastMovingValue, Colors.green),
-          _ChartData('Slow/Dead Stock', slowStockValue, Colors.red),
+          _ChartData('Active Assets', fastMovingValue, const Color(0xFF10B981)),
+          _ChartData(
+              'Stagnant Stock', slowStockValue, PremiumTheme.secondaryColor),
         ];
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- SUMMARY CARDS ---
-              _buildSummaryCard(
-                  "💰 Total Stock Value",
+              _buildSectionHeader(context, "Asset Portfolio"),
+              const SizedBox(height: 16),
+              _summaryCard(
+                  context,
+                  "Net Inventory Value",
                   currencyFormat.format(totalStockValue),
-                  Colors.blueAccent,
+                  Icons.account_balance_wallet_rounded,
+                  PremiumTheme.primaryColor,
                   isFullWidth: true),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _buildSummaryCard("📦 Total Items",
-                        NumberFormat.compact().format(totalItems), Colors.grey),
-                  ),
+                      child: _summaryCard(
+                          context,
+                          "Total Units",
+                          NumberFormat.compact().format(totalItems),
+                          Icons.layers_rounded,
+                          Colors.blueGrey)),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildSummaryCard(
-                        "🟢 Fast-Moving Value",
-                        currencyFormat.format(fastMovingValue),
-                        Colors.green),
-                  ),
+                      child: _summaryCard(
+                          context,
+                          "Active Value",
+                          currencyFormat.format(fastMovingValue),
+                          Icons.bolt_rounded,
+                          const Color(0xFF10B981))),
                 ],
               ),
+              const SizedBox(height: 32),
+              _buildSectionHeader(context, "Value Distribution"),
               const SizedBox(height: 16),
-              _buildSummaryCard(
-                  "🔴 Slow/Dead Stock Value",
-                  currencyFormat.format(slowStockValue),
-                  Colors.red,
-                  isFullWidth: true),
-              const SizedBox(height: 24),
-
-              // --- PIE CHART ---
-              const Text("Stock Distribution",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              if (totalStockValue > 0)
-                SizedBox(
-                  height: 220,
-                  child: SfCircularChart(
-                    title: ChartTitle(text: 'Stock Value Distribution'),
-                    legend: const Legend(
-                      isVisible: true,
-                      overflowMode: LegendItemOverflowMode.wrap,
-                      position: LegendPosition.bottom,
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.cardTheme.color,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: theme.dividerColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                    tooltipBehavior: TooltipBehavior(enable: true),
+                  ],
+                ),
+                child: SizedBox(
+                  height: 260,
+                  child: SfCircularChart(
+                    legend: Legend(
+                      isVisible: true,
+                      position: LegendPosition.bottom,
+                      textStyle: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: theme.hintColor),
+                    ),
                     series: <CircularSeries>[
                       DoughnutSeries<_ChartData, String>(
                         dataSource: chartData,
                         xValueMapper: (_ChartData data, _) => data.x,
                         yValueMapper: (_ChartData data, _) => data.y,
                         pointColorMapper: (_ChartData data, _) => data.color,
-                        dataLabelSettings: const DataLabelSettings(
+                        innerRadius: '70%',
+                        explode: true,
+                        dataLabelSettings: DataLabelSettings(
                           isVisible: true,
-                          labelPosition: ChartDataLabelPosition.outside,
-                          connectorLineSettings: ConnectorLineSettings(
-                            type: ConnectorType.curve,
-                            length: '10%',
-                          ),
+                          textStyle: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.white
+                                  : PremiumTheme.lightTextPrimary),
                         ),
                         dataLabelMapper: (_ChartData data, _) {
-                          if (totalStockValue == 0) return '${data.x}\n0%';
-                          final percentage = data.y / totalStockValue;
-                          return '${data.x}\n${NumberFormat.decimalPercentPattern(decimalDigits: 1).format(percentage)}';
+                          if (totalStockValue == 0) return '0%';
+                          return '${((data.y / totalStockValue) * 100).toStringAsFixed(1)}%';
                         },
-                        explode: true,
-                        explodeIndex: 1, // Explode the 'Slow/Dead Stock' slice
                       )
                     ],
                   ),
-                )
-              else
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8)),
-                  child: const Center(child: Text("No stock value to display")),
                 ),
-              const SizedBox(height: 24),
-
-              // --- PRODUCT LIST ---
-              const Text("Product-wise Valuation",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 32),
+              if (slowStockValue > 0) ...[
+                _buildInsightCard(
+                    context,
+                    "Inventory Warning",
+                    "${currencyFormat.format(slowStockValue)} of your capital is tied up in stock that hasn't moved in 30 days.",
+                    PremiumTheme.secondaryColor),
+                const SizedBox(height: 32),
+              ],
+              _buildSectionHeader(context, "Asset Breakdown"),
               const SizedBox(height: 16),
-              ListView.builder(
+              ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: products.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final product = products[index];
-                  return _buildProductListItem(
-                    product.name,
-                    product.quantity,
-                    product.purchasePrice,
-                    product.quantity * product.purchasePrice,
-                  );
+                  return _buildValuationItem(context, product);
                 },
               ),
-              const SizedBox(height: 24),
-
-              // --- SMART INSIGHT ---
-              if (slowStockValue > 0)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: Colors.orange, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "${currencyFormat.format(slowStockValue)} worth of stock has not moved in 60 days",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 40),
             ],
           ),
         );
@@ -210,60 +191,168 @@ class StockValuation extends StatelessWidget {
     );
   }
 
-  /// Summary Card
-  Widget _buildSummaryCard(String title, String value, Color color,
-      {bool isFullWidth = false}) {
-    final card = Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
     );
-    return isFullWidth ? SizedBox(width: double.infinity, child: card) : card;
   }
 
-  /// Product Item
-  Widget _buildProductListItem(
-      String productName, int quantity, num price, num totalValue) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: const CircleAvatar(
-          child: Icon(Icons.inventory_2_outlined),
-        ),
-        title:
-            Text(productName, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(
-            "$quantity x ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(price)}"),
-        trailing: Text(
-            NumberFormat.currency(locale: 'en_IN', symbol: '₹')
-                .format(totalValue),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  Widget _summaryCard(BuildContext context, String title, String value,
+      IconData icon, Color color,
+      {bool isFullWidth = false}) {
+    final theme = Theme.of(context);
+    return Container(
+      width: isFullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold, color: theme.hintColor),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightCard(
+      BuildContext context, String title, String message, Color color) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome_rounded, color: color, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w800, color: color)),
+                const SizedBox(height: 4),
+                Text(message,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(fontWeight: FontWeight.w600, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValuationItem(BuildContext context, dynamic product) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final totalVal = product.quantity * product.purchasePrice;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 48,
+            width: 48,
+            decoration: BoxDecoration(
+              color: isDark ? PremiumTheme.darkBg : PremiumTheme.lightBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.inventory_2_rounded,
+                size: 20, color: PremiumTheme.primaryColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(product.name,
+                    style: theme.textTheme.bodyLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                Text(
+                    "${product.quantity} units @ ₹${product.purchasePrice.toStringAsFixed(0)}",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold, color: theme.hintColor)),
+              ],
+            ),
+          ),
+          Text(
+            "₹${totalVal.toStringAsFixed(0)}",
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: PremiumTheme.primaryColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.account_balance_rounded,
+              size: 64, color: Theme.of(context).dividerColor),
+          const SizedBox(height: 16),
+          Text("No assets to evaluate",
+              style: TextStyle(
+                  color: Theme.of(context).hintColor,
+                  fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
@@ -271,6 +360,7 @@ class StockValuation extends StatelessWidget {
 
 class _ChartData {
   _ChartData(this.x, this.y, this.color);
+
   final String x;
   final double y;
   final Color color;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
 import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
 import 'package:stock_flow/Data%20Layear/model/SaleModel/sale_model.dart';
@@ -27,7 +29,6 @@ class _weeklysalesState extends State<weeklysales> {
   void initState() {
     super.initState();
     _processSalesData();
-    // Listen for changes in sales from the controller and rebuild the UI
     ever(salesController.sales, (_) {
       if (mounted) {
         setState(() {
@@ -40,34 +41,27 @@ class _weeklysalesState extends State<weeklysales> {
   void _processSalesData() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final oneWeekAgo = today.subtract(const Duration(days: 6)); // Last 7 days including today
+    final oneWeekAgo = today.subtract(const Duration(days: 6));
 
-    // 1. Filter sales for the last 7 days
     final weeklySales = salesController.sales.where((sale) {
       return !sale.date.isBefore(oneWeekAgo) &&
           sale.date.isBefore(today.add(const Duration(days: 1)));
     }).toList();
 
-    // 2. Calculate summary values
     _totalRevenue = weeklySales.fold(0.0, (sum, sale) => sum + sale.totalAmount);
     _totalSalesCount = weeklySales.length;
     _avgSaleValue = _totalSalesCount > 0 ? _totalRevenue / _totalSalesCount : 0.0;
     _totalProfit = _calculateTotalProfit(weeklySales);
-
-    // 3. Prepare chart data
     _chartData = _prepareChartData(weeklySales, oneWeekAgo);
   }
 
   double _calculateTotalProfit(List<SaleModel> sales) {
     double totalProfit = 0.0;
-    if (productController.allProducts.isEmpty) {
-      return 0.0;
-    }
+    if (productController.allProducts.isEmpty) return 0.0;
 
     for (final sale in sales) {
       for (final item in sale.items) {
-        final product =
-            productController.allProducts.firstWhereOrNull((p) => p.id == item['id']);
+        final product = productController.allProducts.firstWhereOrNull((p) => p.id == item['id']);
         if (product != null && product.purchasePrice > 0) {
           final itemPrice = (item['price'] as num? ?? 0.0).toDouble();
           final itemQuantity = (item['quantity'] as num? ?? 0).toInt();
@@ -80,13 +74,11 @@ class _weeklysalesState extends State<weeklysales> {
   }
 
   List<ChartData> _prepareChartData(List<SaleModel> sales, DateTime startDate) {
-    // Use a LinkedHashMap to preserve insertion order
     final Map<DateTime, double> salesByDate = {};
     for (int i = 0; i < 7; i++) {
       salesByDate[startDate.add(Duration(days: i))] = 0.0;
     }
 
-    // Populate with actual sales data
     for (final sale in sales) {
       final saleDay = DateTime(sale.date.year, sale.date.month, sale.date.day);
       if (salesByDate.containsKey(saleDay)) {
@@ -94,7 +86,7 @@ class _weeklysalesState extends State<weeklysales> {
       }
     }
 
-    final DateFormat formatter = DateFormat('E'); // "Mon", "Tue"
+    final DateFormat formatter = DateFormat('E');
     return salesByDate.entries
         .map((entry) => ChartData(formatter.format(entry.key), entry.value))
         .toList();
@@ -102,137 +94,161 @@ class _weeklysalesState extends State<weeklysales> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Weekly Sales",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: isDark ? Colors.white : PremiumTheme.lightTextPrimary, size: 20),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          "Weekly Analytics",
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ----------------- SUMMARY CARDS -----------------
-            Row(
-              children: [
-                _summaryCard(
-                  title: "Total Revenue",
-                  value: "₹${_totalRevenue.toStringAsFixed(0)}",
-                  icon: Icons.currency_rupee,
-                  color: Colors.green,
-                ),
-                const SizedBox(width: 12),
-                _summaryCard(
-                  title: "Total Profit",
-                  value: "₹${_totalProfit.toStringAsFixed(0)}",
-                  icon: Icons.trending_up,
-                  color: Colors.blue,
-                ),
-              ],
-            ),
+            _buildSectionHeader(context, "Last 7 Days Metrics"),
             const SizedBox(height: 16),
-            Row(
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.2,
               children: [
-                _summaryCard(
-                  title: "Total Sales",
-                  value: _totalSalesCount.toString(),
-                  icon: Icons.shopping_cart,
-                  color: Colors.orange,
-                ),
-                const SizedBox(width: 12),
-                _summaryCard(
-                  title: "Avg. Sale Value",
-                  value: "₹${_avgSaleValue.toStringAsFixed(0)}",
-                  icon: Icons.show_chart,
-                  color: Colors.purple,
-                ),
+                _summaryCard(context, "Revenue", "₹${_totalRevenue.toStringAsFixed(0)}", Icons.account_balance_rounded, const Color(0xFF10B981)),
+                _summaryCard(context, "Est. Profit", "₹${_totalProfit.toStringAsFixed(0)}", Icons.auto_graph_rounded, PremiumTheme.primaryColor),
+                _summaryCard(context, "Transactions", _totalSalesCount.toString(), Icons.receipt_long_rounded, const Color(0xFFF59E0B)),
+                _summaryCard(context, "Average Order", "₹${_avgSaleValue.toStringAsFixed(0)}", Icons.shopping_basket_rounded, PremiumTheme.accentColor),
               ],
             ),
-            const SizedBox(height: 10),
-
-            // ----------------- SALES CHART -----------------
-            const Text(
-              "Sales Last 7 Days",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 5),
-            SizedBox(
-              height: 300,
-              child: SfCartesianChart(
-                primaryXAxis: CategoryAxis(
-                  majorGridLines: const MajorGridLines(width: 0),
-                ),
-                primaryYAxis: NumericAxis(
-                  numberFormat: NumberFormat.compactSimpleCurrency(locale: 'en_IN'),
-                ),
-                series: <CartesianSeries>[
-                  ColumnSeries<ChartData, String>(
-                    dataSource: _chartData,
-                    xValueMapper: (ChartData sales, _) => sales.day,
-                    yValueMapper: (ChartData sales, _) => sales.sales,
-                    dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.top),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.teal,
+            const SizedBox(height: 32),
+            _buildSectionHeader(context, "Daily Sales Volume"),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: theme.dividerColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   )
-                ],
+                ]
+              ),
+              child: SizedBox(
+                height: 280,
+                child: SfCartesianChart(
+                  plotAreaBorderWidth: 0,
+                  primaryXAxis: CategoryAxis(
+                    majorGridLines: const MajorGridLines(width: 0),
+                    labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 10, color: theme.hintColor),
+                  ),
+                  primaryYAxis: NumericAxis(
+                    numberFormat: NumberFormat.compactSimpleCurrency(locale: 'en_IN'),
+                    axisLine: const AxisLine(width: 0),
+                    majorTickLines: const MajorTickLines(size: 0),
+                    labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 10, color: theme.hintColor),
+                  ),
+                  series: <CartesianSeries>[
+                    ColumnSeries<ChartData, String>(
+                      dataSource: _chartData,
+                      xValueMapper: (ChartData sales, _) => sales.day,
+                      yValueMapper: (ChartData sales, _) => sales.sales,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                      color: PremiumTheme.primaryColor,
+                      gradient: LinearGradient(
+                        colors: [PremiumTheme.primaryColor, PremiumTheme.primaryColor.withOpacity(0.7)],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                      dataLabelSettings: DataLabelSettings(
+                        isVisible: true,
+                        textStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white : PremiumTheme.lightTextPrimary),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+      ),
+    );
+  }
+
+  Widget _summaryCard(BuildContext context, String title, String value, IconData icon, Color color) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 32, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 4),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+              Text(
+                title,
+                style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: isDark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

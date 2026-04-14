@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
 import 'package:stock_flow/Data%20Layear/model/ProductModel/product_model.dart';
-import 'package:stock_flow/Presentation/dashboard/Quick%20Action/Manage_Quantity.dart';
 
 enum StockSort { quantityAsc, quantityDesc, nameAsc, nameDesc }
 
@@ -37,197 +38,288 @@ class _StockReportState extends State<StockReport> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Stock Report",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, 
+            color: isDark ? Colors.white : PremiumTheme.lightTextPrimary, 
+            size: 20
           ),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          "Inventory Health",
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: Obx(() {
-        // Recalculate summary stats based on controller data
         final products = _productController.allProducts;
         final totalProducts = products.length;
         final outOfStock = products.where((p) => p.quantity == 0).length;
-        final lowStock = products.where((p) => p.quantity > 0 && p.quantity <= 5).length;
-        final inStock = totalProducts - outOfStock - lowStock;
+        final lowStock = products.where((p) => p.quantity > 0 && p.quantity <= 10).length;
+        final healthyStock = totalProducts - outOfStock - lowStock;
 
-        return Column(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _buildSummaryCard("📦 Total Products", totalProducts.toString(), Colors.blueGrey),
-                      const SizedBox(width: 16),
-                      _buildSummaryCard("🟢 In Stock", inStock.toString(), Colors.green),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildSummaryCard("🔴 Out of Stock", outOfStock.toString(), Colors.red),
-                      const SizedBox(width: 16),
-                      _buildSummaryCard("🟡 Low Stock", lowStock.toString(), Colors.orange),
-                    ],
-                  ),
-                ],
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(context, "Global Stock Status"),
+                    const SizedBox(height: 16),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1.3,
+                      children: [
+                        _statusCard(context, "Total SKUs", totalProducts.toString(), Icons.inventory_2_rounded, PremiumTheme.primaryColor),
+                        _statusCard(context, "Healthy", healthyStock.toString(), Icons.check_circle_rounded, const Color(0xFF10B981)),
+                        _statusCard(context, "Low Stock", lowStock.toString(), Icons.warning_amber_rounded, const Color(0xFFF59E0B)),
+                        _statusCard(context, "Out of Stock", outOfStock.toString(), Icons.error_outline_rounded, PremiumTheme.secondaryColor),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Stock List",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  _buildSortDropdown(),
-                ],
+            
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionHeader(context, "Asset Details"),
+                    _buildSortButton(context),
+                  ],
+                ),
               ),
             ),
-            Expanded(
-              child: _sortedProducts.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "No products found.",
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              sliver: _sortedProducts.isEmpty
+                  ? SliverFillRemaining(child: _buildEmptyState(context))
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: _buildStockCard(context, _sortedProducts[index]),
+                        ),
+                        childCount: _sortedProducts.length,
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: _sortedProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = _sortedProducts[index];
-                        String status;
-                        if (product.quantity == 0) {
-                          status = "Empty";
-                        } else if (product.quantity <= 5) {
-                          status = "Low";
-                        } else {
-                          status = "Good";
-                        }
-                        return _buildStockListItem(context, product, status);
-                      },
                     ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         );
       }),
     );
   }
 
-  Widget _buildSortDropdown() {
-    return DropdownButton<StockSort>(
-      value: _currentSort,
-      icon: const Icon(Icons.sort),
-      underline: const SizedBox(),
-      items: const [
-        DropdownMenuItem(
-          value: StockSort.quantityAsc,
-          child: Text("Sort by Quantity (Asc)"),
-        ),
-        DropdownMenuItem(
-          value: StockSort.quantityDesc,
-          child: Text("Sort by Quantity (Desc)"),
-        ),
-        DropdownMenuItem(
-          value: StockSort.nameAsc,
-          child: Text("Sort by Name (A-Z)"),
-        ),
-        DropdownMenuItem(
-          value: StockSort.nameDesc,
-          child: Text("Sort by Name (Z-A)"),
-        ),
-      ],
-      onChanged: (StockSort? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _currentSort = newValue;
-          });
-        }
-      },
-    );
-  }
-
-  Widget _buildSummaryCard(String title, String value, Color color) {
-    return Expanded(
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-              const SizedBox(height: 8),
-              Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-            ],
-          ),
-        ),
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
       ),
     );
   }
 
-  Widget _buildStockListItem(BuildContext context, ProductModel product, String status) {
-    Color statusColor;
-    String statusText;
-
-    switch (status) {
-      case "Good":
-        statusColor = Colors.green;
-        statusText = "In Stock";
-        break;
-      case "Low":
-        statusColor = Colors.orange;
-        statusText = "Low Stock";
-        break;
-      case "Empty":
-      default:
-        statusColor = Colors.red;
-        statusText = "Out of Stock";
-        break;
-    }
-
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: ListTile(
-        leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
-        title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("Available: ${product.quantity}"),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+  Widget _statusCard(BuildContext context, String title, String value, IconData icon, Color color) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+              ),
+              Text(
+                title,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.hintColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSortButton(BuildContext context) {
+    final theme = Theme.of(context);
+    return PopupMenuButton<StockSort>(
+      onSelected: (sort) => setState(() => _currentSort = sort),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      offset: const Offset(0, 45),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: PremiumTheme.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.sort_rounded, size: 16, color: PremiumTheme.primaryColor),
             const SizedBox(width: 8),
-            // IconButton(
-            //   icon: const Icon(Icons.edit, size: 20),
-            //   // onPressed: () {
-            //   //   Get.to(() => ManageQuantity(product: product));
-            //   // },
-            //   color: Colors.blue,
-            // ),
+            Text(
+              "SORT",
+              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, color: PremiumTheme.primaryColor),
+            ),
           ],
         ),
+      ),
+      itemBuilder: (context) => [
+        _buildSortItem(StockSort.quantityAsc, "Low to High Qty"),
+        _buildSortItem(StockSort.quantityDesc, "High to Low Qty"),
+        _buildSortItem(StockSort.nameAsc, "Name: A to Z"),
+        _buildSortItem(StockSort.nameDesc, "Name: Z to A"),
+      ],
+    );
+  }
+
+  PopupMenuItem<StockSort> _buildSortItem(StockSort value, String label) {
+    return PopupMenuItem(
+      value: value,
+      child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  Widget _buildStockCard(BuildContext context, ProductModel product) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    Color statusColor;
+    String statusText;
+    if (product.quantity == 0) {
+      statusColor = PremiumTheme.secondaryColor;
+      statusText = "OUT OF STOCK";
+    } else if (product.quantity <= 10) {
+      statusColor = const Color(0xFFF59E0B);
+      statusText = "LOW STOCK";
+    } else {
+      statusColor = const Color(0xFF10B981);
+      statusText = "STABLE";
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 56,
+            width: 56,
+            decoration: BoxDecoration(
+              color: isDark ? PremiumTheme.darkBg : PremiumTheme.lightBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: product.image.isNotEmpty
+                ? ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(product.image, fit: BoxFit.cover))
+                : Icon(Icons.inventory_2_rounded, color: theme.dividerColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Count: ${product.quantity}",
+                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: theme.hintColor),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              statusText,
+              style: GoogleFonts.inter(
+                color: statusColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 9,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).dividerColor),
+          const SizedBox(height: 16),
+          Text("No products tracked yet", style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

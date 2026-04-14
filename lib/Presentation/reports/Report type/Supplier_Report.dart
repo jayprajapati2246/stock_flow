@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../Data Layear/Controller/sales_controller.dart';
-import '../../../Data Layear/Controller/product_controller.dart';
-import '../../../Data Layear/Controller/supplier_controller.dart';
-import '../../../Data Layear/model/ProductModel/product_model.dart';
-import '../../../Data Layear/model/SupplierModel/supplier_model.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
+import 'package:stock_flow/Data%20Layear/Controller/sales_controller.dart';
+import 'package:stock_flow/Data%20Layear/Controller/product_controller.dart';
+import 'package:stock_flow/Data%20Layear/Controller/supplier_controller.dart';
+import 'package:stock_flow/Data%20Layear/model/ProductModel/product_model.dart';
+import 'package:stock_flow/Data%20Layear/model/SupplierModel/supplier_model.dart';
 
 class SupplierReport extends StatefulWidget {
   const SupplierReport({super.key});
@@ -16,92 +18,70 @@ class SupplierReport extends StatefulWidget {
 
 class _SupplierReportState extends State<SupplierReport> {
   final SupplierController _supplierController = Get.put(SupplierController());
-  final ProductController _productController = Get.put(ProductController());
-  final SalesController _salesController = Get.put(SalesController());
+  final ProductController _productController = Get.find<ProductController>();
+  final SalesController _salesController = Get.find<SalesController>();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "Supplier Report",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : PremiumTheme.lightTextPrimary,
+            size: 20
           ),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          "Supplier Directory",
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
       ),
       body: Obx(() {
         if (_supplierController.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: PremiumTheme.primaryColor));
         } else if (_supplierController.error.value != null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                _supplierController.error.value!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ),
-          );
+          return _buildErrorState(context, _supplierController.error.value!);
         } else if (_supplierController.suppliers.isEmpty) {
-          return const Center(child: Text("No suppliers found."));
+          return _buildEmptyState(context);
         } else {
           final suppliers = _supplierController.suppliers;
           final products = _productController.allProducts;
           final sales = _salesController.sales;
 
-          final Map<String, _SupplierInfo> supplierInfoMap = {};
-
-          for (var s in suppliers) {
-            final supplierProducts =
-                products.where((p) => p.supplierId == s.id).toList();
-
-            final totalCurrentStockQuantity = supplierProducts.length;
-
+          final List<_SupplierInfo> supplierList = suppliers.map((s) {
+            final List<ProductModel> supplierProducts = products.where((p) => p.supplierId == s.id).toList();
             double allTimePurchaseAmount = 0.0;
             for (final product in supplierProducts) {
               final totalSold = sales
                   .expand((sale) => sale.items)
                   .where((item) => item['id'] == product.id)
                   .fold<int>(0, (sum, item) => sum + (item['quantity'] as int));
-
-              final totalEverPurchased = product.quantity + totalSold;
-
-              allTimePurchaseAmount +=
-                  totalEverPurchased * product.purchasePrice;
+              allTimePurchaseAmount += (product.quantity + totalSold) * product.purchasePrice;
             }
-
-            supplierInfoMap[s.id!] = _SupplierInfo(
+            return _SupplierInfo(
               supplier: s,
               products: supplierProducts,
-              totalQuantity: totalCurrentStockQuantity,
+              totalQuantity: supplierProducts.length,
               totalPurchase: allTimePurchaseAmount,
             );
-          }
+          }).toList();
 
-          final supplierList = supplierInfoMap.values.toList();
+          supplierList.sort((a, b) => a.supplier.name.compareTo(b.supplier.name));
 
-          supplierList.sort(
-            (a, b) => a.supplier.name.compareTo(b.supplier.name),
-          );
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(12.0),
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             itemCount: supplierList.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final info = supplierList[index];
-              return _buildSupplierCard(
-                info.supplier,
-                info.totalQuantity,
-                info.products,
-                info.totalPurchase,
-              );
+              return _buildSupplierCard(context, info);
             },
           );
         }
@@ -109,155 +89,208 @@ class _SupplierReportState extends State<SupplierReport> {
     );
   }
 
-  void _showDeleteConfirmationDialog(BuildContext context, String supplierId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Supplier'),
-          content: const Text(
-              'Are you sure you want to delete this supplier? This action cannot be undone.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                _supplierController.removeSupplier(supplierId);
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  Widget _buildSupplierCard(BuildContext context, _SupplierInfo info) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-  Widget _buildSupplierCard(
-    Supplier supplier,
-    int totalQuantity,
-    List<ProductModel> products,
-    double totalPurchase,
-  ) {
-    return Card(
-      elevation: 2.0,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
               children: [
+                Container(
+                  height: 56,
+                  width: 56,
+                  decoration: BoxDecoration(
+                    color: PremiumTheme.primaryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.business_rounded, color: PremiumTheme.primaryColor, size: 28),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        supplier.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        info.supplier.name,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.phone, color: Colors.grey[600], size: 16),
-                          const SizedBox(width: 8),
+                          Icon(Icons.phone_rounded, color: theme.hintColor, size: 14),
+                          const SizedBox(width: 6),
                           Text(
-                            supplier.contact,
-                            style: TextStyle(
-                                color: Colors.grey[800], fontSize: 14),
+                            info.supplier.contact,
+                            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: theme.hintColor),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        _showDeleteConfirmationDialog(context, supplier.id!);
-                      },
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () => _showDeleteConfirmationDialog(context, info.supplier.id!),
+                  style: IconButton.styleFrom(
+                    backgroundColor: PremiumTheme.secondaryColor.withValues(alpha: 0.12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.delete_outline_rounded, color: PremiumTheme.secondaryColor, size: 20),
                 ),
               ],
             ),
-            const Divider(height: 24),
-            Row(
+          ),
+
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: isDark ? PremiumTheme.darkBg : PremiumTheme.lightBg,
+              border: Border.symmetric(horizontal: BorderSide(color: theme.dividerColor)),
+            ),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatColumn(
-                  "Total Product",
-                  totalQuantity.toString(),
-                  Colors.blue.shade800,
-                ),
-                _buildStatColumn(
-                  "Total Purchases",
-                  NumberFormat.currency(symbol: '₹', decimalDigits: 0)
-                      .format(totalPurchase),
-                  Colors.green.shade800,
-                ),
+                _buildStat(context, "CATALOG", "${info.totalQuantity} items", PremiumTheme.primaryColor),
+                Container(width: 1, height: 30, color: theme.dividerColor),
+                _buildStat(context, "TOTAL TRADE", NumberFormat.compactSimpleCurrency(locale: 'en_IN').format(info.totalPurchase), const Color(0xFF10B981)),
               ],
             ),
-            const Divider(height: 24),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
+          ),
+
+          Theme(
+            data: theme.copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28))),
               title: Text(
-                "View Products ",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                "Supplied Products",
+                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: PremiumTheme.primaryColor),
               ),
-              children: products.map((product) {
+              children: info.products.map((product) {
                 return ListTile(
-                  title: Text(product.name),
-                  trailing: Text("Qty: ${product.quantity}"),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: theme.dividerColor.withValues(alpha: 0.1),
+                    ),
+                    child: product.image.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              product.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.inventory_2_outlined, size: 20),
+                            ),
+                          )
+                        : const Icon(Icons.inventory_2_outlined, size: 20),
+                  ),
+                  title: Text(product.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  subtitle: Text(
+                    NumberFormat.simpleCurrency(locale: 'en_IN').format(product.price),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: PremiumTheme.primaryColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "Qty: ${product.quantity}",
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: product.quantity <= 5 ? PremiumTheme.secondaryColor : null,
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStat(BuildContext context, String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: Theme.of(context).hintColor, letterSpacing: 1)),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900, color: color)),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.local_shipping_outlined, size: 64, color: Theme.of(context).dividerColor),
+          const SizedBox(height: 16),
+          Text("No suppliers found", style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 48, color: PremiumTheme.secondaryColor),
+            const SizedBox(height: 16),
+            Text(error, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatColumn(String title, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
+  void _showDeleteConfirmationDialog(BuildContext context, String supplierId) {
+    final theme = Theme.of(context);
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: Text("Remove Supplier?", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+        content: const Text("This will remove the supplier record. Associated products will remain in inventory."),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("Cancel", style: TextStyle(color: theme.hintColor, fontWeight: FontWeight.bold))),
+          ElevatedButton(
+            onPressed: () {
+              _supplierController.removeSupplier(supplierId);
+              Get.back();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: PremiumTheme.secondaryColor, minimumSize: const Size(100, 48)),
+            child: const Text("Delete"),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

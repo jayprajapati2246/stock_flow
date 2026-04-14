@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:stock_flow/Comon%20part%20for%20all/premium_theme.dart';
 import 'package:stock_flow/Data%20Layear/Controller/report_controller.dart';
 
 class Report extends StatelessWidget {
@@ -8,148 +10,174 @@ class Report extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ReportController controller = Get.put(ReportController());
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Inventory Reports",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+    return Scaffold(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Analytics & Reports",
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontSize: 24,
+                letterSpacing: -0.5,
               ),
-              const SizedBox(height: 20),
-              _buildReportItem(
-                icon: Icons.bar_chart,
-                iconColor: Colors.teal,
-                bgColor: const Color(0xFFE0F2F1),
-                title: "Sales Report",
-                subtitle: "View daily, weekly & monthly sales stats.",
-                onTap: controller.goToSalesReport,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Gain deep insights into your business performance and inventory health.",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
               ),
-              _buildReportItem(
-                icon: Icons.assignment_outlined,
-                iconColor: Colors.blue,
-                bgColor: const Color(0xFFE3F2FD),
-                title: "Stock Report",
-                subtitle: "Overview of current stock levels.",
-                onTap: controller.goToStockReport,
-              ),
-
-              _buildReportItem(
-                icon: Icons.currency_rupee,
-                iconColor: Colors.deepPurple,
-                bgColor: const Color(0xFFEDE7F6),
-                title: "Profit & Loss Report",
-                subtitle: "Calculate revenue, cost, and profits.",
-                onTap: controller.goToProfitLossReport,
-              ),
-
-              _buildReportItem(
-                icon: Icons.inventory_2_outlined,
-                iconColor: Colors.green,
-                bgColor: const Color(0xFFE8F5E9),
-                title: "Stock Valuation",
-                subtitle: "Calculate the total value of your stock.",
-                onTap: controller.goToStockValuation,
-              ),
-              _buildReportItem(
-                icon: Icons.local_shipping_outlined,
-                iconColor: Colors.blueGrey,
-                bgColor: const Color(0xFFECEFF1),
-                title: "Supplier Report",
-                subtitle: "Supplier wise purchase and payments.",
-                onTap: controller.goToSupplierReport,
-              ),
-              // _buildReportItem(
-              //   icon: Icons.person_pin,
-              //   iconColor: Colors.deepPurple,
-              //   bgColor: const Color(0xFFEDE7F6),
-              //   title: "User Report",
-              //   subtitle: "Show User Detail and Manage it.",
-              //   onTap: controller.goToUser_Report,
-              // ),
-
-            ],
-          ),
+            ),
+            const SizedBox(height: 32),
+            
+            _buildReportCategory(context, "Financial Performance"),
+            const SizedBox(height: 12),
+            _buildReportItem(
+              context,
+              icon: Icons.account_balance_wallet_rounded,
+              color: PremiumTheme.primaryColor,
+              title: "Profit & Loss",
+              subtitle: "Revenue, costs, and net profit analysis",
+              onTap: controller.goToProfitLossReport,
+            ),
+            _buildReportItem(
+              context,
+              icon: Icons.payments_rounded,
+              color: const Color(0xFF10B981),
+              title: "Sales Report",
+              subtitle: "Detailed breakdown of sales performance",
+              onTap: controller.goToSalesReport,
+            ),
+            
+            const SizedBox(height: 32),
+            _buildReportCategory(context, "Inventory Insights"),
+            const SizedBox(height: 12),
+            _buildReportItem(
+              context,
+              icon: Icons.inventory_2_rounded,
+              color: const Color(0xFFF59E0B),
+              title: "Stock Status",
+              subtitle: "Current levels and availability report",
+              onTap: controller.goToStockReport,
+            ),
+            _buildReportItem(
+              context,
+              icon: Icons.analytics_rounded,
+              color: PremiumTheme.accentColor,
+              title: "Stock Valuation",
+              subtitle: "Total monetary value of current inventory",
+              onTap: controller.goToStockValuation,
+            ),
+            
+            const SizedBox(height: 32),
+            _buildReportCategory(context, "Partner Analytics"),
+            const SizedBox(height: 12),
+            _buildReportItem(
+              context,
+              icon: Icons.local_shipping_rounded,
+              color: const Color(0xFF0EA5E9),
+              title: "Supplier Report",
+              subtitle: "Purchase history and supplier performance",
+              onTap: controller.goToSupplierReport,
+            ),
+            const SizedBox(height: 40),
+          ],
         ),
-      );
+      ),
+    );
   }
 
-  Widget _buildReportItem({
+  Widget _buildReportCategory(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          color: theme.brightness == Brightness.dark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportItem(
+    BuildContext context, {
     required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
+    required Color color,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: color, size: 28),
                 ),
-                child: Icon(icon, color: iconColor, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? PremiumTheme.darkTextSecondary : PremiumTheme.lightTextSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
+                Icon(Icons.arrow_forward_ios_rounded, color: theme.dividerColor, size: 18),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-
-
